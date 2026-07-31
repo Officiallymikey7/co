@@ -1,8 +1,11 @@
 package com.colony.mod.registry;
 
 import com.colony.mod.ColonyMod;
+import com.colony.mod.block.TownLedgerBlock;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
@@ -16,10 +19,15 @@ public final class ColonyBlocks {
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(BuiltInRegistries.BLOCK, ColonyMod.MOD_ID);
 
-    // Smart-object blocks will be registered here in future phases.
-    // Example:
-    // public static final var COLONY_BED = BLOCKS.register("colony_bed",
-    //         () -> new ColonyBedBlock(BlockBehaviour.Properties.of()));
+    /**
+     * The Town Ledger block — placed by the autonomous builder at the colony town centre.
+     * Right-clicking opens the {@link com.colony.mod.client.TownLedgerScreen}.
+     */
+    public static final DeferredHolder<Block, TownLedgerBlock> TOWN_LEDGER =
+            BLOCKS.register("town_ledger",
+                    () -> new TownLedgerBlock(BlockBehaviour.Properties.of()
+                            .strength(2.5f)
+                            .requiresCorrectToolForDrops()));
 
     private ColonyBlocks() {}
 }

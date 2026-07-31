@@ -30,10 +30,13 @@ public class Need {
 
     /**
      * Applies one game-tick of natural decay to this need.
+     * The decay rate is scaled by {@link com.colony.mod.ColonyConfig#getNeedDecayMultiplier()}
+     * so server admins can tune it via config without touching code.
      * The value is clamped to {@code [0, maxValue]}.
      */
     public void tick() {
-        value = Math.max(MIN_VALUE, value - type.getDecayPerTick());
+        float multiplier = com.colony.mod.ColonyConfig.getNeedDecayMultiplier();
+        value = Math.max(MIN_VALUE, value - type.getDecayPerTick() * multiplier);
     }
 
     // -------------------------------------------------------------------------

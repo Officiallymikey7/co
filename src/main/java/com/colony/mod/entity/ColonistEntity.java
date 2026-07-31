@@ -1,7 +1,7 @@
 package com.colony.mod.entity;
 
+import com.colony.mod.ColonyConfig;
 import com.colony.mod.entity.ai.ActionContext;
-import com.colony.mod.entity.ai.UtilityAI;
 import com.colony.mod.entity.ai.goap.GOAPGoal;
 import com.colony.mod.entity.ai.goap.GOAPAction;
 import com.colony.mod.entity.ai.goap.GOAPPlanner;
@@ -9,19 +9,30 @@ import com.colony.mod.entity.ai.goals.*;
 import com.colony.mod.entity.needs.NeedsComponent;
 import com.colony.mod.entity.needs.NeedType;
 import com.colony.mod.entity.schedule.DailySchedule;
-import com.colony.mod.entity.schedule.SchedulePhase;
+import com.colony.mod.network.ColonistInspectPacket;
+import com.colony.mod.performance.ColonyAIExecutor;
+import com.colony.mod.social.RelationshipData;
+import com.colony.mod.social.SocialNetwork;
 import com.colony.mod.town.JobRole;
+import com.colony.mod.town.TownManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The main NPC entity of the Colony mod — an autonomous citizen.
@@ -31,13 +42,11 @@ import java.util.*;
  *   <li>Tracks continuous {@link NeedsComponent} stats (Hunger, Energy, Social, Safety)</li>
  *   <li>Uses a {@link UtilityAI} each evaluation cycle to determine the highest-priority
  *       {@link GOAPGoal}</li>
- *   <li>Feeds that goal to the {@link GOAPPlanner} which produces an ordered action plan</li>
- *   <li>Executes the plan step-by-step, with each action completing over one or more ticks</li>
+ *   <li>Feeds that goal to the {@link GOAPPlanner} which produces an ordered action plan —
+ *       computed asynchronously on the {@link ColonyAIExecutor} background thread</li>
+ *   <li>Executes the cached plan step-by-step on the main thread</li>
  *   <li>Follows a {@link DailySchedule} that biases goal weights by time of day</li>
  * </ul>
- *
- * <p>The colonist does NOT need player input to function. It self-manages survival, social
- * interaction, job performance, and (via the Town Planner) contributes to colony expansion.
  */
 public class ColonistEntity extends PathfinderMob {
 
@@ -64,15 +73,34 @@ public class ColonistEntity extends PathfinderMob {
     /** All atomic GOAP actions available to this colonist. */
     private final List<GOAPAction> availableActions = new ArrayList<>();
 
-    /** Current active plan produced by the GOAP planner. */
+    /** Current active plan consumed on the main thread. */
     private final Deque<GOAPAction> currentPlan = new ArrayDeque<>();
 
     /** The goal currently being pursued. */
     private GOAPGoal activeGoal;
 
-    /** How often (in ticks) to re-evaluate goals. */
-    private static final int AI_EVAL_INTERVAL = 40; // every 2 seconds
-    private int aiEvalCountdown = 0;
+    // -------------------------------------------------------------------------
+    // Async AI planning
+    // -------------------------------------------------------------------------
+
+    /**
+     * Pending plan computed asynchronously. The main thread swaps this in when not null
+     * and then clears it.
+     */
+    private final AtomicReference<List<GOAPAction>> pendingPlanResult = new AtomicReference<>(null);
+    private final AtomicReference<GOAPGoal> pendingGoalResult = new AtomicReference<>(null);
+
+    /** Future tracking the in-flight planning task (null when idle). */
+    private Future<?> planningFuture = null;
+
+    /**
+     * Snapshot of need values at the time planning was last submitted.
+     * Used to detect significant changes (> threshold) that warrant a replan.
+     */
+    private float[] lastPlannedNeedValues = new float[NeedType.values().length];
+
+    /** Whether an initial plan has never been computed. */
+    private boolean firstPlan = true;
 
     // -------------------------------------------------------------------------
     // Colony membership
@@ -140,65 +168,104 @@ public class ColonistEntity extends PathfinderMob {
     }
 
     /**
-     * Runs one tick of the colonist's Utility AI + GOAP execution loop.
+     * Runs one tick of the colonist's AI execution loop.
      *
      * <ol>
-     *   <li>Every {@link #AI_EVAL_INTERVAL} ticks, re-score all goals and (re-)plan if the
-     *       highest-priority goal changed.</li>
-     *   <li>Each tick, attempt to execute the next step in the current plan.</li>
+     *   <li>Checks if a newly computed async plan is ready and swaps it in.</li>
+     *   <li>If needs have changed beyond the replan threshold (or this is the first tick),
+     *       submits a new async planning task.</li>
+     *   <li>Executes the next step of the current plan.</li>
      * </ol>
      */
     private void tickAI() {
         ActionContext ctx = new ActionContext(this, level());
-        SchedulePhase phase = schedule.getPhase(level().getDayTime());
 
-        aiEvalCountdown--;
-        if (aiEvalCountdown <= 0) {
-            aiEvalCountdown = AI_EVAL_INTERVAL;
-            replanIfNeeded(ctx, phase);
+        // --- Swap in a newly computed async plan ---
+        List<GOAPAction> incoming = pendingPlanResult.getAndSet(null);
+        if (incoming != null) {
+            currentPlan.clear();
+            currentPlan.addAll(incoming);
+            activeGoal = pendingGoalResult.getAndSet(null);
+            recordNeedSnapshot();
         }
 
-        // Execute current plan
+        // --- Submit async replan if dirty ---
+        if (shouldReplan()) {
+            submitAsyncPlan(ctx);
+        }
+
+        // --- Execute current plan ---
         if (!currentPlan.isEmpty()) {
             GOAPAction action = currentPlan.peek();
             if (action.checkProceduralPrecondition(ctx)) {
                 boolean done = action.perform(ctx);
-                if (done) {
-                    currentPlan.poll();
-                }
+                if (done) currentPlan.poll();
             } else {
-                // Precondition failed mid-execution — replan next cycle
                 action.reset(ctx);
                 currentPlan.clear();
                 activeGoal = null;
+                firstPlan = true; // trigger replan immediately
             }
         }
     }
 
     /**
-     * Selects the highest-priority goal and, if it differs from the active goal,
-     * re-runs the GOAP planner to produce a new action plan.
+     * Returns {@code true} if the AI should be replanned:
+     * <ul>
+     *   <li>First-ever plan has not been computed yet.</li>
+     *   <li>No in-flight planning task and the current plan is exhausted.</li>
+     *   <li>A need value has changed by more than {@link ColonyConfig#getAiReplanNeedThreshold()}
+     *       points since the last plan.</li>
+     * </ul>
      */
-    private void replanIfNeeded(ActionContext ctx, SchedulePhase phase) {
-        GOAPGoal best = goals.stream()
+    private boolean shouldReplan() {
+        if (planningFuture != null && !planningFuture.isDone()) return false; // already planning
+        if (firstPlan) return true;
+        if (currentPlan.isEmpty() && activeGoal != null) return true;
+        return needsChangedSignificantly();
+    }
+
+    private boolean needsChangedSignificantly() {
+        int threshold = ColonyConfig.getAiReplanNeedThreshold();
+        NeedType[] types = NeedType.values();
+        for (int i = 0; i < types.length; i++) {
+            if (Math.abs(needs.getValue(types[i]) - lastPlannedNeedValues[i]) > threshold) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void recordNeedSnapshot() {
+        NeedType[] types = NeedType.values();
+        for (int i = 0; i < types.length; i++) {
+            lastPlannedNeedValues[i] = needs.getValue(types[i]);
+        }
+    }
+
+    /**
+     * Submits an async AI planning task to {@link ColonyAIExecutor}.
+     * The result will be picked up on the next main-thread tick via {@link #pendingPlanResult}.
+     */
+    private void submitAsyncPlan(ActionContext ctx) {
+        firstPlan = false;
+
+        // Capture immutable snapshots for use on the background thread
+        final List<GOAPGoal> goalsCopy = new ArrayList<>(goals);
+        final List<GOAPAction> actionsCopy = new ArrayList<>(availableActions);
+        final Map<String, Object> worldState = buildCurrentWorldState();
+        final GOAPGoal best = goalsCopy.stream()
                 .max(Comparator.comparingDouble(g -> g.getPriority(ctx)))
                 .orElse(null);
 
         if (best == null) return;
 
-        if (best != activeGoal) {
-            // Abort current plan
-            if (!currentPlan.isEmpty()) {
-                currentPlan.peek().reset(ctx);
-                currentPlan.clear();
-            }
-            activeGoal = best;
-
-            // Build new plan
-            List<GOAPAction> plan = GOAPPlanner.plan(
-                    activeGoal, availableActions, buildCurrentWorldState());
-            currentPlan.addAll(plan);
-        }
+        planningFuture = ColonyAIExecutor.getInstance().submit(() -> {
+            List<GOAPAction> plan = GOAPPlanner.plan(best, actionsCopy, worldState);
+            pendingGoalResult.set(best);
+            pendingPlanResult.set(plan.isEmpty() ? Collections.emptyList() : plan);
+            return null;
+        });
     }
 
     /**
@@ -215,6 +282,52 @@ public class ColonistEntity extends PathfinderMob {
         state.put("has_bed", false);       // updated by smart-object scanner
         state.put("food_available", false); // updated by smart-object scanner
         return state;
+    }
+
+    // -------------------------------------------------------------------------
+    // Player interaction
+    // -------------------------------------------------------------------------
+
+    /**
+     * When a player right-clicks this colonist, send an inspection packet to the client
+     * that triggers the {@link com.colony.mod.client.ColonistInspectHud} overlay.
+     */
+    @Override
+    protected InteractionResult mobInteract(Player player, InteractionHand hand) {
+        if (!level().isClientSide() && player instanceof ServerPlayer serverPlayer) {
+            buildAndSendInspectPacket(serverPlayer);
+            return InteractionResult.SUCCESS;
+        }
+        return super.mobInteract(player, hand);
+    }
+
+    private void buildAndSendInspectPacket(ServerPlayer player) {
+        String goalName = activeGoal != null ? activeGoal.getName() : "Idle";
+
+        // Top-3 relationships from the social network
+        List<ColonistInspectPacket.RelationshipEntry> relEntries = new ArrayList<>();
+        TownManager manager = TownManager.get(player.serverLevel());
+        if (manager != null) {
+            SocialNetwork sn = manager.getTownData().getSocialNetwork();
+            List<RelationshipData> topRels = sn.getTopRelationships(getUUID(), 3);
+            for (RelationshipData rel : topRels) {
+                UUID otherId = rel.getColonistA().equals(getUUID()) ? rel.getColonistB() : rel.getColonistA();
+                // Look up the other colonist by UUID; fall back to short UUID string
+                net.minecraft.world.entity.Entity other = player.serverLevel().getEntity(otherId);
+                String otherName = other != null ? other.getName().getString() : otherId.toString().substring(0, 8);
+                relEntries.add(new ColonistInspectPacket.RelationshipEntry(otherName, rel.getAffinity()));
+            }
+        }
+
+        ColonistInspectPacket packet = new ColonistInspectPacket(
+                goalName,
+                needs.getValue(NeedType.HUNGER),
+                needs.getValue(NeedType.ENERGY),
+                needs.getValue(NeedType.SOCIAL),
+                needs.getValue(NeedType.SAFETY),
+                relEntries
+        );
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     // -------------------------------------------------------------------------

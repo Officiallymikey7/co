@@ -13,7 +13,8 @@ import java.util.*;
  * Persistent data container for a single colony.
  *
  * <p>Stores the colony's current census, housing assignments, food reserves, defence level,
- * and the {@link SocialNetwork} and {@link SmartObjectRegistry} for this dimension.
+ * economy (treasury, wages, player wallets), housing market (rent prices), law record, and the
+ * {@link SocialNetwork} and {@link SmartObjectRegistry} for this dimension.
  *
  * <p>This class is serialised with the world (via a {@code SavedData} subclass) so that
  * colony state persists across server restarts.
@@ -54,6 +55,41 @@ public class TownData {
     private int housingCapacity = 5;
 
     // -------------------------------------------------------------------------
+    // Economy — treasury, wages, player wallets
+    // -------------------------------------------------------------------------
+
+    /** Shared colony treasury (colony coins). Payday withdrawals come from here. */
+    private int townTreasury = 0;
+
+    /**
+     * Per-role daily wage override.  Falls back to {@link com.colony.mod.ColonyConfig#getBaseDailyWage()}
+     * when no override is set for a role.
+     */
+    private final Map<JobRole, Integer> colonistWages = new EnumMap<>(JobRole.class);
+
+    /**
+     * Per-UUID wallet balance.  Used for both NPC colonists and human players.
+     * Human players can withdraw coins as {@link com.colony.mod.registry.ColonyItems#COLONY_CURRENCY}.
+     */
+    private final Map<UUID, Integer> walletBalances = new HashMap<>();
+
+    // -------------------------------------------------------------------------
+    // Housing market
+    // -------------------------------------------------------------------------
+
+    /** Maps a home BlockPos → its nightly rent price (0 = player-owned, no rent). */
+    private final Map<BlockPos, Integer> rentPrices = new HashMap<>();
+
+    /** Homes that a player has fully purchased (no nightly rent). */
+    private final Set<BlockPos> playerOwnedHomes = new HashSet<>();
+
+    // -------------------------------------------------------------------------
+    // Law
+    // -------------------------------------------------------------------------
+
+    private final LawRecord lawRecord = new LawRecord();
+
+    // -------------------------------------------------------------------------
     // Sub-systems
     // -------------------------------------------------------------------------
 
@@ -73,9 +109,11 @@ public class TownData {
         colonistIds.remove(id);
         homeAssignments.remove(id);
         jobAssignments.remove(id);
+        walletBalances.remove(id);
     }
 
     public int getPopulation() { return colonistIds.size(); }
+    public Set<UUID> getColonistIds() { return Collections.unmodifiableSet(colonistIds); }
     public int getHomelessCount() {
         int homeless = 0;
         for (UUID id : colonistIds) {
@@ -105,6 +143,11 @@ public class TownData {
         return list;
     }
 
+    /** Returns the number of colonists (or players) currently holding the given role. */
+    public long countByRole(JobRole role) {
+        return jobAssignments.values().stream().filter(r -> r == role).count();
+    }
+
     // -------------------------------------------------------------------------
     // Housing
     // -------------------------------------------------------------------------
@@ -115,6 +158,82 @@ public class TownData {
 
     public BlockPos getHome(UUID colonistId) {
         return homeAssignments.get(colonistId);
+    }
+
+    /** Removes a home assignment for the given colonist (they become homeless). */
+    public void revokeHome(UUID colonistId) {
+        homeAssignments.remove(colonistId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Housing market
+    // -------------------------------------------------------------------------
+
+    /** Sets the nightly rent for a home block position. */
+    public void setRentPrice(BlockPos pos, int price) {
+        rentPrices.put(pos.immutable(), Math.max(0, price));
+    }
+
+    public int getRentPrice(BlockPos pos) {
+        return rentPrices.getOrDefault(pos.immutable(), 0);
+    }
+
+    /** Marks a home as player-owned (no more rent payments required). */
+    public void markPlayerOwned(BlockPos pos) {
+        playerOwnedHomes.add(pos.immutable());
+        rentPrices.remove(pos.immutable());
+    }
+
+    public boolean isPlayerOwned(BlockPos pos) {
+        return playerOwnedHomes.contains(pos.immutable());
+    }
+
+    /** Returns an unmodifiable view of all homes that are available for rent or purchase. */
+    public Map<BlockPos, Integer> getRentPrices() {
+        return Collections.unmodifiableMap(rentPrices);
+    }
+
+    // -------------------------------------------------------------------------
+    // Economy
+    // -------------------------------------------------------------------------
+
+    public int getTownTreasury() { return townTreasury; }
+    public void setTownTreasury(int amount) { townTreasury = Math.max(0, amount); }
+    public void adjustTreasury(int delta) { townTreasury = Math.max(0, townTreasury + delta); }
+
+    /**
+     * Returns the configured daily wage for a role.
+     * Falls back to {@link com.colony.mod.ColonyConfig#getBaseDailyWage()} if no override.
+     */
+    public int getWageForRole(JobRole role) {
+        return colonistWages.getOrDefault(role, com.colony.mod.ColonyConfig.getBaseDailyWage());
+    }
+
+    public void setWageForRole(JobRole role, int wage) {
+        colonistWages.put(role, Math.max(0, wage));
+    }
+
+    /** Returns the wallet balance for a UUID (defaults to 0 if no entry exists). */
+    public int getWalletBalance(UUID id) {
+        return walletBalances.getOrDefault(id, 0);
+    }
+
+    /** Deposits coins into a wallet. Returns the new balance. */
+    public int depositToWallet(UUID id, int amount) {
+        int newBalance = walletBalances.getOrDefault(id, 0) + Math.max(0, amount);
+        walletBalances.put(id, newBalance);
+        return newBalance;
+    }
+
+    /**
+     * Withdraws coins from a wallet. Returns the amount actually withdrawn
+     * (may be less than requested if the wallet has insufficient funds).
+     */
+    public int withdrawFromWallet(UUID id, int amount) {
+        int current = walletBalances.getOrDefault(id, 0);
+        int withdrawn = Math.min(current, Math.max(0, amount));
+        walletBalances.put(id, current - withdrawn);
+        return withdrawn;
     }
 
     // -------------------------------------------------------------------------
@@ -130,6 +249,12 @@ public class TownData {
 
     public int getHousingCapacity() { return housingCapacity; }
     public void setHousingCapacity(int capacity) { housingCapacity = Math.max(0, capacity); }
+
+    // -------------------------------------------------------------------------
+    // Law
+    // -------------------------------------------------------------------------
+
+    public LawRecord getLawRecord() { return lawRecord; }
 
     // -------------------------------------------------------------------------
     // Sub-system accessors
@@ -155,6 +280,7 @@ public class TownData {
         tag.putInt("foodStore", foodStoreLevel);
         tag.putInt("defenceLevel", defenceLevel);
         tag.putInt("housingCapacity", housingCapacity);
+        tag.putInt("treasury", townTreasury);
 
         // Colonists
         ListTag colonistList = new ListTag();
@@ -169,8 +295,50 @@ public class TownData {
         }
         tag.put("colonists", colonistList);
 
+        // Wallets
+        ListTag walletList = new ListTag();
+        for (Map.Entry<UUID, Integer> e : walletBalances.entrySet()) {
+            CompoundTag w = new CompoundTag();
+            w.putUUID("id", e.getKey());
+            w.putInt("balance", e.getValue());
+            walletList.add(w);
+        }
+        tag.put("wallets", walletList);
+
+        // Role wages
+        ListTag wageList = new ListTag();
+        for (Map.Entry<JobRole, Integer> e : colonistWages.entrySet()) {
+            CompoundTag w = new CompoundTag();
+            w.putString("role", e.getKey().name());
+            w.putInt("wage", e.getValue());
+            wageList.add(w);
+        }
+        tag.put("wages", wageList);
+
+        // Rent prices
+        ListTag rentList = new ListTag();
+        for (Map.Entry<BlockPos, Integer> e : rentPrices.entrySet()) {
+            CompoundTag r = new CompoundTag();
+            r.putLong("pos", e.getKey().asLong());
+            r.putInt("price", e.getValue());
+            rentList.add(r);
+        }
+        tag.put("rentPrices", rentList);
+
+        // Player-owned homes
+        ListTag ownedList = new ListTag();
+        for (BlockPos pos : playerOwnedHomes) {
+            CompoundTag o = new CompoundTag();
+            o.putLong("pos", pos.asLong());
+            ownedList.add(o);
+        }
+        tag.put("playerOwnedHomes", ownedList);
+
         // Social network
         tag.put("socialNetwork", socialNetwork.save());
+
+        // Law record
+        tag.put("lawRecord", lawRecord.save());
 
         return tag;
     }
@@ -181,6 +349,7 @@ public class TownData {
         foodStoreLevel = tag.getInt("foodStore");
         defenceLevel = tag.getInt("defenceLevel");
         housingCapacity = tag.getInt("housingCapacity");
+        townTreasury = tag.getInt("treasury");
 
         colonistIds.clear();
         homeAssignments.clear();
@@ -191,14 +360,53 @@ public class TownData {
             CompoundTag c = colonistList.getCompound(i);
             UUID id = c.getUUID("id");
             colonistIds.add(id);
-            jobAssignments.put(id, JobRole.valueOf(c.getString("job")));
+            try {
+                jobAssignments.put(id, JobRole.valueOf(c.getString("job")));
+            } catch (IllegalArgumentException e) {
+                jobAssignments.put(id, JobRole.UNEMPLOYED);
+            }
             if (c.contains("home")) {
                 homeAssignments.put(id, BlockPos.of(c.getLong("home")));
             }
         }
 
+        walletBalances.clear();
+        ListTag walletList = tag.getList("wallets", Tag.TAG_COMPOUND);
+        for (int i = 0; i < walletList.size(); i++) {
+            CompoundTag w = walletList.getCompound(i);
+            walletBalances.put(w.getUUID("id"), w.getInt("balance"));
+        }
+
+        colonistWages.clear();
+        ListTag wageList = tag.getList("wages", Tag.TAG_COMPOUND);
+        for (int i = 0; i < wageList.size(); i++) {
+            CompoundTag w = wageList.getCompound(i);
+            try {
+                colonistWages.put(JobRole.valueOf(w.getString("role")), w.getInt("wage"));
+            } catch (IllegalArgumentException ignored) {
+                // unknown role — skip
+            }
+        }
+
+        rentPrices.clear();
+        ListTag rentList = tag.getList("rentPrices", Tag.TAG_COMPOUND);
+        for (int i = 0; i < rentList.size(); i++) {
+            CompoundTag r = rentList.getCompound(i);
+            rentPrices.put(BlockPos.of(r.getLong("pos")), r.getInt("price"));
+        }
+
+        playerOwnedHomes.clear();
+        ListTag ownedList = tag.getList("playerOwnedHomes", Tag.TAG_COMPOUND);
+        for (int i = 0; i < ownedList.size(); i++) {
+            playerOwnedHomes.add(BlockPos.of(ownedList.getCompound(i).getLong("pos")));
+        }
+
         if (tag.contains("socialNetwork")) {
             socialNetwork.load(tag.getCompound("socialNetwork"));
+        }
+
+        if (tag.contains("lawRecord")) {
+            lawRecord.load(tag.getCompound("lawRecord"));
         }
     }
 }
