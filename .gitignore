@@ -2,7 +2,6 @@
 .gradle/
 build/
 out/
-!gradle/wrapper/gradle-wrapper.jar
 
 # IntelliJ IDEA
 .idea/
@@ -34,3 +33,4 @@ Thumbs.db
 *.class
 *.jar
 *.war
+!gradle/wrapper/gradle-wrapper.jar
