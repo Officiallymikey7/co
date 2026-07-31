@@ -6,14 +6,14 @@ import com.colony.mod.town.TownData;
 import com.colony.mod.town.TownManager;
 import com.colony.mod.town.builder.BuilderTask;
 import io.netty.buffer.ByteBuf;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,15 +73,27 @@ public record TownLedgerResponsePacket(
         );
     }
 
-    @OnlyIn(Dist.CLIENT)
-    public static void handle(TownLedgerResponsePacket packet, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.screen instanceof TownLedgerScreen ledgerScreen) {
-                ledgerScreen.refresh(packet);
-            } else {
-                mc.setScreen(new TownLedgerScreen(packet));
-            }
-        });
+    /**
+     * Registers the client-side handler. Called from the client entry point.
+     */
+    @Environment(EnvType.CLIENT)
+    public static void registerClientHandler() {
+        ClientPlayNetworking.registerGlobalReceiver(TYPE,
+                (packet, context) -> context.client().execute(
+                        () -> handleClient(packet)));
+    }
+
+    /**
+     * Called on the client main thread when this packet arrives.
+     * Opens or refreshes the Town Ledger screen.
+     */
+    @Environment(EnvType.CLIENT)
+    public static void handleClient(TownLedgerResponsePacket packet) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof TownLedgerScreen ledgerScreen) {
+            ledgerScreen.refresh(packet);
+        } else {
+            mc.setScreen(new TownLedgerScreen(packet));
+        }
     }
 }

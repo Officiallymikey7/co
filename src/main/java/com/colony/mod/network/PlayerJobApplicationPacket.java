@@ -4,13 +4,13 @@ import com.colony.mod.ColonyMod;
 import com.colony.mod.town.JobRole;
 import com.colony.mod.town.TownManager;
 import io.netty.buffer.ByteBuf;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.Locale;
 
@@ -36,9 +36,9 @@ public record PlayerJobApplicationPacket(String requestedRole) implements Custom
     /**
      * Called on the server thread when this packet is received from a client.
      */
-    public static void handle(PlayerJobApplicationPacket packet, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player)) return;
+    public static void handle(PlayerJobApplicationPacket packet, ServerPlayNetworking.Context context) {
+        context.server().execute(() -> {
+            ServerPlayer player = context.player();
 
             JobRole role;
             try {

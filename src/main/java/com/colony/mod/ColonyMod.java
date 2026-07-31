@@ -1,18 +1,23 @@
 package com.colony.mod;
 
+import com.colony.mod.entity.ColonistEntity;
+import com.colony.mod.event.CrimeCommittedEvent;
+import com.colony.mod.network.ColonyNetworking;
 import com.colony.mod.performance.ColonyAIExecutor;
 import com.colony.mod.registry.ColonyBlockEntityTypes;
-import com.colony.mod.registry.ColonyEntityTypes;
 import com.colony.mod.registry.ColonyBlocks;
+import com.colony.mod.registry.ColonyEntityTypes;
 import com.colony.mod.registry.ColonyItems;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import com.colony.mod.town.CrimeType;
+import com.colony.mod.town.TownManager;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,35 +44,58 @@ import org.apache.logging.log4j.Logger;
  *   <li>Smart Object API — extensible third-party block registration (Phase 8)</li>
  * </ul>
  */
-@Mod(ColonyMod.MOD_ID)
-@EventBusSubscriber(modid = ColonyMod.MOD_ID, bus = EventBusSubscriber.Bus.GAME)
-public class ColonyMod {
+public class ColonyMod implements ModInitializer {
 
     public static final String MOD_ID = "colony";
     public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 
-    public ColonyMod(IEventBus modEventBus, ModContainer modContainer) {
-        // Register deferred registries onto the mod event bus
-        ColonyEntityTypes.ENTITY_TYPES.register(modEventBus);
-        ColonyBlocks.BLOCKS.register(modEventBus);
-        ColonyItems.ITEMS.register(modEventBus);
-        ColonyBlockEntityTypes.BLOCK_ENTITY_TYPES.register(modEventBus);
+    @Override
+    public void onInitialize() {
+        // Register all content
+        ColonyEntityTypes.register();
+        ColonyBlocks.register();
+        ColonyItems.register();
+        ColonyBlockEntityTypes.register();
 
-        // Register the TOML config (common = shared between client and server)
-        modContainer.registerConfig(ModConfig.Type.COMMON, ColonyConfig.SPEC, "colony-common.toml");
+        // Register entity attributes
+        FabricDefaultAttributeRegistry.register(ColonyEntityTypes.COLONIST, ColonistEntity.createAttributes());
 
-        // Common setup (attribute registration, smart-object API built-in seeding, etc.)
-        modEventBus.addListener(this::commonSetup);
+        // Load config from disk
+        ColonyConfig.load();
+
+        // Register networking payload types and server-side handlers
+        ColonyNetworking.registerCommon();
+
+        // Seed built-in smart-object definitions
+        seedBuiltInSmartObjects();
+
+        // Server lifecycle: shut down AI executor when server stops
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            ColonyAIExecutor.shutdown();
+            LOGGER.info("[Colony] Server stopping — AI executor shut down.");
+        });
+
+        // Per-level tick: drive the Colony State Monitor
+        ServerTickEvents.END_WORLD_TICK.register(level -> {
+            if (level instanceof ServerLevel serverLevel) {
+                TownManager.get(serverLevel).serverTick(serverLevel);
+            }
+        });
+
+        // Crime detection: attacking a colonist is assault
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            if (world instanceof ServerLevel serverLevel
+                    && player instanceof ServerPlayer
+                    && entity instanceof ColonistEntity) {
+                TownManager manager = TownManager.get(serverLevel);
+                if (manager != null) {
+                    manager.handleCrime(new CrimeCommittedEvent(player, CrimeType.ASSAULT));
+                }
+            }
+            return InteractionResult.PASS;
+        });
 
         LOGGER.info("[Colony] Mod initialising — autonomous colony simulation loading.");
-    }
-
-    private void commonSetup(final FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> {
-            seedBuiltInSmartObjects();
-            LOGGER.info("[Colony] Common setup complete. {} smart-object definitions registered.",
-                    com.colony.mod.smartobject.ColonySmartObjectAPI.size());
-        });
     }
 
     /**
@@ -91,15 +119,8 @@ public class ColonyMod {
                     )
             );
         }
-    }
-
-    // -------------------------------------------------------------------------
-    // Server lifecycle
-    // -------------------------------------------------------------------------
-
-    @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) {
-        ColonyAIExecutor.shutdown();
-        LOGGER.info("[Colony] Server stopping — AI executor shut down.");
+        LOGGER.info("[Colony] Common setup complete. {} smart-object definitions registered.",
+                com.colony.mod.smartobject.ColonySmartObjectAPI.size());
     }
 }
+

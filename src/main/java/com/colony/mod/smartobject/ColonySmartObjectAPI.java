@@ -12,27 +12,23 @@ import java.util.Map;
  * Public API for registering custom Smart Object definitions with the Colony mod.
  *
  * <p>Third-party mods (e.g. Farmer's Delight, Create, furniture mods) call
- * {@link #register(ResourceLocation, SmartObjectDefinition)} during their {@code FMLCommonSetupEvent}
+ * {@link #register(ResourceLocation, SmartObjectDefinition)} during their mod initialisation
  * to teach Colony colonists about their custom blocks. Once registered, the
  * {@link SmartObjectRegistry#scanChunk} method will automatically detect matching blocks
  * and make them available as smart objects for colonist need-satisfaction.
  *
- * <h2>Usage (from another mod):</h2>
+ * <h2>Usage (from another Fabric mod):</h2>
  * <pre>{@code
- * @SubscribeEvent
- * public static void onCommonSetup(FMLCommonSetupEvent event) {
- *     event.enqueueWork(() -> {
- *         ColonySmartObjectAPI.register(
- *             ResourceLocation.fromNamespaceAndPath("mymod", "fancy_chair"),
- *             new SmartObjectDefinition(
- *                 NeedType.SOCIAL,
- *                 25f,   // satisfaction amount
- *                 200,   // ticks to use
- *                 state -> state.is(MyModBlocks.FANCY_CHAIR.get())
- *             )
- *         );
- *     });
- * }
+ * // in your ModInitializer.onInitialize():
+ * ColonySmartObjectAPI.register(
+ *     ResourceLocation.fromNamespaceAndPath("mymod", "fancy_chair"),
+ *     new SmartObjectDefinition(
+ *         NeedType.SOCIAL,
+ *         25f,   // satisfaction amount
+ *         200,   // ticks to use
+ *         state -> state.is(MyModBlocks.FANCY_CHAIR)
+ *     )
+ * );
  * }</pre>
  *
  * <p>Registration is not concurrent-safe; all calls must occur on the main server/client

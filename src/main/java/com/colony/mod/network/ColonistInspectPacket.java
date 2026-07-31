@@ -3,13 +3,13 @@ package com.colony.mod.network;
 import com.colony.mod.ColonyMod;
 import com.colony.mod.client.ColonistInspectHud;
 import io.netty.buffer.ByteBuf;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.networking.v1.ClientPlayNetworking;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,11 +59,12 @@ public record ColonistInspectPacket(
     }
 
     /**
-     * Called on the client thread when this packet arrives.
-     * Passes data to the HUD overlay for rendering.
+     * Registers the client-side handler. Called from the client entry point.
      */
-    @OnlyIn(Dist.CLIENT)
-    public static void handle(ColonistInspectPacket packet, IPayloadContext context) {
-        context.enqueueWork(() -> ColonistInspectHud.showInspectData(packet));
+    @Environment(EnvType.CLIENT)
+    public static void registerClientHandler() {
+        ClientPlayNetworking.registerGlobalReceiver(TYPE,
+                (packet, context) -> context.client().execute(
+                        () -> ColonistInspectHud.showInspectData(packet)));
     }
 }

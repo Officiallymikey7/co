@@ -2,12 +2,12 @@ package com.colony.mod.client;
 
 import com.colony.mod.network.TownLedgerQueryPacket;
 import com.colony.mod.network.TownLedgerResponsePacket;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -27,7 +27,7 @@ import java.util.List;
  *   <li>Recent crime log (last 10 entries)</li>
  * </ul>
  */
-@OnlyIn(Dist.CLIENT)
+@Environment(EnvType.CLIENT)
 public class TownLedgerScreen extends Screen {
 
     private TownLedgerResponsePacket data;
@@ -109,7 +109,7 @@ public class TownLedgerScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // 'R' key — request a data refresh from the server
         if (keyCode == GLFW.GLFW_KEY_R) {
-            PacketDistributor.sendToServer(new TownLedgerQueryPacket(true));
+            ClientPlayNetworking.send(new TownLedgerQueryPacket(true));
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
