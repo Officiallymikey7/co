@@ -9,7 +9,6 @@ import com.colony.mod.entity.ai.goals.*;
 import com.colony.mod.entity.needs.NeedsComponent;
 import com.colony.mod.entity.needs.NeedType;
 import com.colony.mod.entity.schedule.DailySchedule;
-import com.colony.mod.entity.schedule.SchedulePhase;
 import com.colony.mod.network.ColonistInspectPacket;
 import com.colony.mod.performance.ColonyAIExecutor;
 import com.colony.mod.social.RelationshipData;
@@ -89,6 +88,7 @@ public class ColonistEntity extends PathfinderMob {
      * and then clears it.
      */
     private final AtomicReference<List<GOAPAction>> pendingPlanResult = new AtomicReference<>(null);
+    private final AtomicReference<GOAPGoal> pendingGoalResult = new AtomicReference<>(null);
 
     /** Future tracking the in-flight planning task (null when idle). */
     private Future<?> planningFuture = null;
@@ -185,6 +185,7 @@ public class ColonistEntity extends PathfinderMob {
         if (incoming != null) {
             currentPlan.clear();
             currentPlan.addAll(incoming);
+            activeGoal = pendingGoalResult.getAndSet(null);
             recordNeedSnapshot();
         }
 
@@ -253,20 +254,15 @@ public class ColonistEntity extends PathfinderMob {
         final List<GOAPGoal> goalsCopy = new ArrayList<>(goals);
         final List<GOAPAction> actionsCopy = new ArrayList<>(availableActions);
         final Map<String, Object> worldState = buildCurrentWorldState();
-        final SchedulePhase phase = schedule.getPhase(level().getDayTime());
+        final GOAPGoal best = goalsCopy.stream()
+                .max(Comparator.comparingDouble(g -> g.getPriority(ctx)))
+                .orElse(null);
+
+        if (best == null) return;
 
         planningFuture = ColonyAIExecutor.getInstance().submit(() -> {
-            GOAPGoal best = goalsCopy.stream()
-                    .max(Comparator.comparingDouble(g -> g.getPriority(ctx)))
-                    .orElse(null);
-
-            if (best == null) return null;
-
-            // Store active goal reference (written on AI thread, read on main thread — ok since it's
-            // a reference assignment which is atomic on all JVMs)
-            activeGoal = best;
-
             List<GOAPAction> plan = GOAPPlanner.plan(best, actionsCopy, worldState);
+            pendingGoalResult.set(best);
             pendingPlanResult.set(plan.isEmpty() ? Collections.emptyList() : plan);
             return null;
         });
