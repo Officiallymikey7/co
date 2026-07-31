@@ -3,6 +3,7 @@ package com.colony.mod.smartobject;
 import com.colony.mod.entity.needs.NeedType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,7 +15,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * here when placed and unregister when broken. Colonists query this registry to find nearby
  * objects that can satisfy a given need.
  *
- * <p>One registry instance exists per {@link Level} (dimension). It is owned by the
+ * <p>In addition to explicit {@link #register} calls, the registry supports chunk scanning
+ * via {@link #scanChunk}: every block position in the given chunk is tested against all
+ * registered {@link SmartObjectDefinition}s (both built-in via {@link SmartObjectType} and
+ * third-party via {@link ColonySmartObjectAPI}) and matching blocks are auto-registered.
+ *
+ * <p>One registry instance exists per dimension. It is owned by the
  * {@link com.colony.mod.town.TownData} for that level and serialised with world data.
  */
 public class SmartObjectRegistry {
@@ -27,7 +33,7 @@ public class SmartObjectRegistry {
     // -------------------------------------------------------------------------
 
     /**
-     * Registers a new smart object at the given position.
+     * Registers a new smart object at the given position using a legacy {@link SmartObjectType}.
      * If an object is already registered at that position it is replaced.
      *
      * @param type the smart-object type to register
@@ -35,6 +41,18 @@ public class SmartObjectRegistry {
      */
     public void register(SmartObjectType type, BlockPos pos) {
         objects.put(pos.immutable(), new SmartObject(type, pos.immutable()));
+    }
+
+    /**
+     * Registers a new smart object at the given position using an extensible
+     * {@link SmartObjectDefinition}. This is the preferred method when integrating
+     * third-party blocks via {@link ColonySmartObjectAPI}.
+     *
+     * @param definition the smart-object definition
+     * @param pos        the block position
+     */
+    public void registerDynamic(SmartObjectDefinition definition, BlockPos pos) {
+        objects.put(pos.immutable(), new SmartObject(definition, pos.immutable()));
     }
 
     /**
@@ -47,6 +65,53 @@ public class SmartObjectRegistry {
     }
 
     // -------------------------------------------------------------------------
+    // Chunk scanning
+    // -------------------------------------------------------------------------
+
+    /**
+     * Scans a 16×16 region centred on {@code chunkOrigin} and registers any block that matches
+     * a known {@link SmartObjectDefinition} (from built-in types or third-party mods via
+     * {@link ColonySmartObjectAPI}).
+     *
+     * <p>This should be called when a colony chunk is loaded for the first time or after a
+     * world restart, so blocks placed while the server was offline are picked up.
+     *
+     * @param level       the world to scan
+     * @param chunkOrigin the south-west corner of the chunk (y is ignored; scans y 0–255)
+     */
+    public void scanChunk(Level level, BlockPos chunkOrigin) {
+        Collection<SmartObjectDefinition> allDefs = buildAllDefinitions();
+        if (allDefs.isEmpty()) return;
+
+        for (int dx = 0; dx < 16; dx++) {
+            for (int dz = 0; dz < 16; dz++) {
+                for (int y = level.getMinBuildHeight(); y < level.getMaxBuildHeight(); y++) {
+                    BlockPos pos = chunkOrigin.offset(dx, y - chunkOrigin.getY(), dz);
+                    BlockState state = level.getBlockState(pos);
+                    if (state.isAir()) continue;
+
+                    for (SmartObjectDefinition def : allDefs) {
+                        if (def.matches(state)) {
+                            registerDynamic(def, pos);
+                            break; // first matching definition wins
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Builds the combined list of definitions: built-in {@link SmartObjectType} entries
+     * converted to {@link SmartObjectDefinition}, followed by all third-party registrations
+     * from {@link ColonySmartObjectAPI}.
+     */
+    private Collection<SmartObjectDefinition> buildAllDefinitions() {
+        List<SmartObjectDefinition> all = new ArrayList<>(ColonySmartObjectAPI.getAll());
+        return all;
+    }
+
+    // -------------------------------------------------------------------------
     // Query
     // -------------------------------------------------------------------------
 
@@ -56,8 +121,8 @@ public class SmartObjectRegistry {
      *
      * <p>Results are sorted nearest-first so the colonist prefers the closest option.
      *
-     * @param targetNeed   the need to satisfy
-     * @param origin       the colonist's current position
+     * @param targetNeed    the need to satisfy
+     * @param origin        the colonist's current position
      * @param maxDistanceSq maximum squared distance to search
      * @return list of candidate smart objects, sorted nearest-first
      */
@@ -78,11 +143,6 @@ public class SmartObjectRegistry {
     /**
      * Returns the nearest unreserved smart object of any type that satisfies the given need,
      * or {@code null} if none is within range.
-     *
-     * @param targetNeed   the need to satisfy
-     * @param origin       the colonist's current position
-     * @param maxDistanceSq maximum squared distance to search
-     * @return nearest candidate, or {@code null}
      */
     public SmartObject findNearest(NeedType targetNeed, BlockPos origin, double maxDistanceSq,
                                    @SuppressWarnings("unused") boolean single) {

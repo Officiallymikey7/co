@@ -152,9 +152,10 @@ src/main/java/com/colony/mod/
 - [x] **Phase 2** — Smart Objects: block utility advertisement, colonist search & pathfind
 - [x] **Phase 3** — Autonomous Construction: builder tasks, NBT structure templates
 - [x] **Phase 4** — Town Logic: Colony State Monitor, demographic-driven expansion
-- [ ] **Phase 5** — Animations: GeckoLib expressions, working/sleeping/chatting animations
-- [ ] **Phase 6** — Extended Schedules: seasonal events, weddings, celebrations
-- [ ] **Phase 7** — Player Integration: player can take on roles, vote in colony decisions
+- [x] **Phase 5** — Player Systems: employment & wages, housing market, laws, taxes & crime enforcement
+- [x] **Phase 6** — Performance: async AI executor, abstract tickless simulation for unloaded colonies
+- [x] **Phase 7** — UI: colonist inspector HUD overlay, Town Ledger block & screen
+- [x] **Phase 8** — Cross-mod API: `ColonySmartObjectAPI`, `SmartObjectDefinition`, TOML config
 
 ---
 

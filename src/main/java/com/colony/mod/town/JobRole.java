@@ -16,7 +16,13 @@ public enum JobRole {
     LUMBERJACK("Lumberjack"),
     MINER("Miner"),
     MERCHANT("Merchant"),
-    DOCTOR("Doctor");
+    DOCTOR("Doctor"),
+
+    /**
+     * Sentinel used when a human player has taken a shift at a colony workstation.
+     * The player earns wages like any NPC colonist but is not AI-controlled.
+     */
+    PLAYER("Player");
 
     private final String displayName;
 

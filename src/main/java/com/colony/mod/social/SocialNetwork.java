@@ -5,6 +5,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Manages all pairwise {@link RelationshipData} records for a colony's population.
@@ -20,6 +21,22 @@ public class SocialNetwork {
 
     /** All pairwise relationships, keyed by canonical pair key. */
     private final Map<String, RelationshipData> relationships = new HashMap<>();
+
+    /**
+     * Returns the top {@code n} relationships for the given colonist, sorted by absolute
+     * affinity magnitude (strongest bonds, positive or negative, first).
+     *
+     * @param colonistId the colonist to look up
+     * @param n          maximum number of relationships to return
+     * @return list of relationship data, sorted by |affinity| descending
+     */
+    public List<RelationshipData> getTopRelationships(UUID colonistId, int n) {
+        return relationships.values().stream()
+                .filter(r -> r.getColonistA().equals(colonistId) || r.getColonistB().equals(colonistId))
+                .sorted((a, b) -> Float.compare(Math.abs(b.getAffinity()), Math.abs(a.getAffinity())))
+                .limit(n)
+                .collect(Collectors.toList());
+    }
 
     // -------------------------------------------------------------------------
     // Interaction API
