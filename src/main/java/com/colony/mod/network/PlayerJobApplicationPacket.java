@@ -12,6 +12,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import java.util.Locale;
+
 /**
  * Server-bound packet: a player requests a shift at a colony job site.
  *
@@ -40,7 +42,7 @@ public record PlayerJobApplicationPacket(String requestedRole) implements Custom
 
             JobRole role;
             try {
-                role = JobRole.valueOf(packet.requestedRole().toUpperCase());
+                role = JobRole.valueOf(packet.requestedRole().toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
                 ColonyMod.LOGGER.warn("[Colony] Player {} sent invalid job role: {}",
                         player.getName().getString(), packet.requestedRole());

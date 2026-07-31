@@ -4,11 +4,15 @@ import com.colony.mod.ColonyConfig;
 import com.colony.mod.ColonyMod;
 import com.colony.mod.event.CrimeCommittedEvent;
 import com.colony.mod.performance.SimulationMode;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.datafix.DataFixTypes;
+import net.minecraft.world.level.saveddata.SavedData;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -36,10 +40,16 @@ public class TownManager {
     // -------------------------------------------------------------------------
 
     private static final Map<ServerLevel, TownManager> INSTANCES = new WeakHashMap<>();
+    private static final String TOWN_DATA_NAME = ColonyMod.MOD_ID + "_town_data";
 
     /** Returns (or lazily creates) the TownManager for the given level. */
     public static TownManager get(ServerLevel level) {
-        return INSTANCES.computeIfAbsent(level, l -> new TownManager());
+        return INSTANCES.computeIfAbsent(level, TownManager::createForLevel);
+    }
+
+    private static TownManager createForLevel(ServerLevel level) {
+        TownSavedData saved = level.getDataStorage().computeIfAbsent(TownSavedData.factory(), TOWN_DATA_NAME);
+        return new TownManager(saved);
     }
 
     // -------------------------------------------------------------------------
@@ -48,6 +58,7 @@ public class TownManager {
 
     private final TownData townData;
     private final ColonyStateMonitor stateMonitor;
+    private final TownSavedData savedData;
 
     /** Current simulation mode — switches when the town-centre chunk loads/unloads. */
     private SimulationMode simulationMode = SimulationMode.FULL_3D;
@@ -69,8 +80,9 @@ public class TownManager {
     // Construction
     // -------------------------------------------------------------------------
 
-    private TownManager() {
-        this.townData = new TownData();
+    private TownManager(TownSavedData savedData) {
+        this.savedData = savedData;
+        this.townData = savedData.townData();
         this.stateMonitor = new ColonyStateMonitor();
     }
 
@@ -109,6 +121,8 @@ public class TownManager {
             processPayday(level);
             processRent(level);
         }
+
+        savedData.setDirty();
     }
 
     // -------------------------------------------------------------------------
@@ -170,10 +184,9 @@ public class TownManager {
             int tax = (int) (grossWage * taxRate);
             int netWage = grossWage - tax;
 
-            if (townData.getTownTreasury() < grossWage) break; // treasury empty
+            if (townData.getTownTreasury() < netWage) break; // treasury empty
 
-            townData.adjustTreasury(-grossWage);
-            townData.adjustTreasury(tax); // tax goes back to treasury
+            townData.adjustTreasury(-netWage);
             townData.depositToWallet(entry.getKey(), netWage);
 
             ColonyMod.LOGGER.debug("[Colony] Payday: {} earns {} coins (tax {})", entry.getKey(), netWage, tax);
@@ -257,6 +270,7 @@ public class TownManager {
         player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
                 "[Colony] You are now employed as a " + role.getDisplayName() +
                 ". Wages will be paid at the end of each in-game day."));
+        savedData.setDirty();
     }
 
     // -------------------------------------------------------------------------
@@ -292,6 +306,45 @@ public class TownManager {
 
         // Guards with EnforceOrderGoal will pick up the blacklist on their next AI cycle.
         // (Actual guard dispatch happens in ColonistEntity AI when it checks the LawRecord.)
+        savedData.setDirty();
+    }
+
+    @SubscribeEvent
+    public static void onLevelTick(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        TownManager.get(level).serverTick(level);
+    }
+
+    private static final class TownSavedData extends SavedData {
+        private final TownData townData;
+
+        private TownSavedData() {
+            this(new TownData());
+        }
+
+        private TownSavedData(TownData townData) {
+            this.townData = townData;
+        }
+
+        private static TownSavedData load(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+            TownData townData = new TownData();
+            townData.load(tag.getCompound("townData"));
+            return new TownSavedData(townData);
+        }
+
+        private static Factory<TownSavedData> factory() {
+            return new Factory<>(TownSavedData::new, TownSavedData::load, DataFixTypes.LEVEL);
+        }
+
+        @Override
+        public CompoundTag save(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+            tag.put("townData", townData.save());
+            return tag;
+        }
+
+        private TownData townData() {
+            return townData;
+        }
     }
 
     // -------------------------------------------------------------------------

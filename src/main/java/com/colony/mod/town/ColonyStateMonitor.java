@@ -165,17 +165,36 @@ public class ColonyStateMonitor {
 
         townData.getLawRecord().openVote(proposals);
 
-        // Each merchant councillor casts a vote; preference leans toward lower rates
-        long merchantCount = townData.countByRole(JobRole.MERCHANT);
-        if (merchantCount == 0) {
+        List<java.util.UUID> merchants = new ArrayList<>();
+        for (java.util.UUID id : townData.getColonistIds()) {
+            if (townData.getJob(id) == JobRole.MERCHANT) {
+                merchants.add(id);
+            }
+        }
+
+        if (merchants.isEmpty()) {
             // No merchants — vote randomly
             proposals.get(random.nextInt(proposals.size())).addVote(1.0);
         } else {
-            for (int i = 0; i < merchantCount; i++) {
-                // Merchants prefer low taxes (their score = 1 / (1 + rate))
+            for (java.util.UUID merchantId : merchants) {
+                double influence = 1.0;
+                for (com.colony.mod.social.RelationshipData rel
+                        : townData.getSocialNetwork().getTopRelationships(merchantId, townData.getPopulation())) {
+                    influence += Math.max(0.0, rel.getAffinity());
+                }
+
+                VoteProposal choice = null;
+                double bestScore = Double.NEGATIVE_INFINITY;
                 for (VoteProposal p : proposals) {
-                    double weight = 1.0 / (1.0 + p.getProposedTaxRate()) + random.nextDouble() * 0.3;
-                    p.addVote(weight);
+                    // Merchants prefer low taxes; add mild randomness per vote.
+                    double score = (1.0 / (1.0 + p.getProposedTaxRate())) + random.nextDouble() * 0.3;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        choice = p;
+                    }
+                }
+                if (choice != null) {
+                    choice.addVote(influence);
                 }
             }
         }

@@ -36,7 +36,11 @@ public class CrimeCommittedEvent extends Event {
     public UUID getPerpetrator() { return perpetratorId; }
 
     /** The live entity reference (may be null after despawn; check {@code isAlive()}). */
-    public Entity getPerpetatorEntity() { return perpetratorEntity; }
+    public Entity getPerpetratorEntity() { return perpetratorEntity; }
+
+    /** @deprecated Use {@link #getPerpetratorEntity()}. */
+    @Deprecated(forRemoval = true)
+    public Entity getPerpetatorEntity() { return getPerpetratorEntity(); }
 
     public CrimeType getCrimeType() { return crimeType; }
 

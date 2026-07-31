@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
@@ -107,7 +108,7 @@ public class TownLedgerScreen extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // 'R' key — request a data refresh from the server
-        if (keyCode == 82) { // GLFW_KEY_R
+        if (keyCode == GLFW.GLFW_KEY_R) {
             PacketDistributor.sendToServer(new TownLedgerQueryPacket(true));
             return true;
         }

@@ -1,7 +1,5 @@
 package com.colony.mod.block;
 
-import com.colony.mod.network.TownLedgerQueryPacket;
-import com.colony.mod.registry.ColonyBlockEntityTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
@@ -23,9 +21,8 @@ import javax.annotation.Nullable;
  * <p>Right-clicking this block opens the {@link com.colony.mod.client.TownLedgerScreen} which
  * displays the colony's current status, economy, active projects, and crime log.
  *
- * <p>Data is always fetched fresh from the server via a
- * {@link TownLedgerQueryPacket} / {@link com.colony.mod.network.TownLedgerResponsePacket}
- * round-trip so the screen always reflects current state.
+ * <p>On open, the server sends a fresh {@link com.colony.mod.network.TownLedgerResponsePacket}
+ * directly to the player so the screen reflects current state.
  */
 public class TownLedgerBlock extends BaseEntityBlock {
 

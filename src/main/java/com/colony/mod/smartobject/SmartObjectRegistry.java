@@ -102,9 +102,9 @@ public class SmartObjectRegistry {
     }
 
     /**
-     * Builds the combined list of definitions: built-in {@link SmartObjectType} entries
-     * converted to {@link SmartObjectDefinition}, followed by all third-party registrations
-     * from {@link ColonySmartObjectAPI}.
+     * Builds the list of definitions currently exposed by {@link ColonySmartObjectAPI}.
+     *
+     * <p>Built-in legacy types are expected to be seeded into that API during mod setup.
      */
     private Collection<SmartObjectDefinition> buildAllDefinitions() {
         List<SmartObjectDefinition> all = new ArrayList<>(ColonySmartObjectAPI.getAll());
