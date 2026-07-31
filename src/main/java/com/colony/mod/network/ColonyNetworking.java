@@ -1,52 +1,47 @@
 package com.colony.mod.network;
 
 import com.colony.mod.ColonyMod;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 /**
- * Registers all Colony network packets with the NeoForge payload handler system.
+ * Registers all Colony network packets with the Fabric networking API.
  *
- * <p>Server-bound packets are registered with {@code playToServer}; client-bound packets
- * with {@code playToClient}. The version string {@code "1"} must match on both sides.
+ * <p>Server-bound packets are registered with {@code playC2S}; client-bound packets
+ * with {@code playS2C}. Server-side handlers are registered here; client-side handlers
+ * are registered in {@link #registerClient()} (called from the client entry point).
  */
-@EventBusSubscriber(modid = ColonyMod.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public final class ColonyNetworking {
 
     private ColonyNetworking() {}
 
-    @SubscribeEvent
-    public static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("1");
+    /**
+     * Registers payload types and server-side handlers. Called during common (main) init.
+     */
+    public static void registerCommon() {
+        // Client-bound payload types (server → client)
+        PayloadTypeRegistry.playS2C().register(ColonistInspectPacket.TYPE, ColonistInspectPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(TownLedgerResponsePacket.TYPE, TownLedgerResponsePacket.STREAM_CODEC);
 
-        // Phase 5 — Player employment application (client → server)
-        registrar.playToServer(
-                PlayerJobApplicationPacket.TYPE,
-                PlayerJobApplicationPacket.STREAM_CODEC,
-                PlayerJobApplicationPacket::handle
-        );
+        // Server-bound payload types (client → server)
+        PayloadTypeRegistry.playC2S().register(PlayerJobApplicationPacket.TYPE, PlayerJobApplicationPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(TownLedgerQueryPacket.TYPE, TownLedgerQueryPacket.STREAM_CODEC);
 
-        // Phase 7 — Colonist inspection data (server → client)
-        registrar.playToClient(
-                ColonistInspectPacket.TYPE,
-                ColonistInspectPacket.STREAM_CODEC,
-                ColonistInspectPacket::handle
-        );
+        // Server-side handlers for client → server packets
+        ServerPlayNetworking.registerGlobalReceiver(PlayerJobApplicationPacket.TYPE,
+                PlayerJobApplicationPacket::handle);
+        ServerPlayNetworking.registerGlobalReceiver(TownLedgerQueryPacket.TYPE,
+                TownLedgerQueryPacket::handle);
+    }
 
-        // Phase 7 — Town ledger query (client → server)
-        registrar.playToServer(
-                TownLedgerQueryPacket.TYPE,
-                TownLedgerQueryPacket.STREAM_CODEC,
-                TownLedgerQueryPacket::handle
-        );
-
-        // Phase 7 — Town ledger response (server → client)
-        registrar.playToClient(
-                TownLedgerResponsePacket.TYPE,
-                TownLedgerResponsePacket.STREAM_CODEC,
-                TownLedgerResponsePacket::handle
-        );
+    /**
+     * Registers client-side handlers for server → client packets. Called during client init.
+     */
+    @Environment(EnvType.CLIENT)
+    public static void registerClient() {
+        ColonistInspectPacket.registerClientHandler();
+        TownLedgerResponsePacket.registerClientHandler();
     }
 }

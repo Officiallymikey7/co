@@ -9,10 +9,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -29,10 +25,9 @@ import java.util.WeakHashMap;
  *       based on chunk load state</li>
  *   <li>Running abstract statistical simulation when the colony is unloaded</li>
  *   <li>Payday: distributing wages to all employed colonists and players every in-game day</li>
- *   <li>Handling {@link CrimeCommittedEvent}s from the Forge event bus</li>
+ *   <li>Handling {@link CrimeCommittedEvent}s</li>
  * </ul>
  */
-@EventBusSubscriber(modid = ColonyMod.MOD_ID, bus = EventBusSubscriber.Bus.GAME)
 public class TownManager {
 
     // -------------------------------------------------------------------------
@@ -277,22 +272,6 @@ public class TownManager {
     // Crime event handling
     // -------------------------------------------------------------------------
 
-    @SubscribeEvent
-    public static void onPlayerAttackEntity(AttackEntityEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!(event.getTarget() instanceof com.colony.mod.entity.ColonistEntity)) return;
-
-        ServerLevel level = player.serverLevel();
-        TownManager manager = get(level);
-        if (manager == null) return;
-
-        CrimeCommittedEvent crime = new CrimeCommittedEvent(player,
-                com.colony.mod.town.CrimeType.ASSAULT);
-        // Post the event so any external listeners can react, then handle locally
-        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(crime);
-        manager.handleCrime(crime);
-    }
-
     /**
      * Records the crime, blacklists the perpetrator, and dispatches guards.
      */
@@ -307,12 +286,6 @@ public class TownManager {
         // Guards with EnforceOrderGoal will pick up the blacklist on their next AI cycle.
         // (Actual guard dispatch happens in ColonistEntity AI when it checks the LawRecord.)
         savedData.setDirty();
-    }
-
-    @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
-        TownManager.get(level).serverTick(level);
     }
 
     private static final class TownSavedData extends SavedData {

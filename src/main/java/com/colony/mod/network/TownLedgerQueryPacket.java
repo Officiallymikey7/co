@@ -3,14 +3,13 @@ package com.colony.mod.network;
 import com.colony.mod.ColonyMod;
 import com.colony.mod.town.TownManager;
 import io.netty.buffer.ByteBuf;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Server-bound packet: a client requests the current state of the Town Ledger.
@@ -31,15 +30,15 @@ public record TownLedgerQueryPacket(boolean dummy) implements CustomPacketPayloa
         return TYPE;
     }
 
-    public static void handle(TownLedgerQueryPacket packet, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player)) return;
+    public static void handle(TownLedgerQueryPacket packet, ServerPlayNetworking.Context context) {
+        context.server().execute(() -> {
+            ServerPlayer player = context.player();
             ServerLevel level = player.serverLevel();
             TownManager manager = TownManager.get(level);
             if (manager == null) return;
 
             TownLedgerResponsePacket response = TownLedgerResponsePacket.from(manager);
-            PacketDistributor.sendToPlayer(player, response);
+            ServerPlayNetworking.send(player, response);
         });
     }
 }

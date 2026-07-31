@@ -2,21 +2,16 @@ package com.colony.mod.event;
 
 import com.colony.mod.town.CrimeType;
 import net.minecraft.world.entity.Entity;
-import net.neoforged.bus.api.Event;
 
 import java.util.UUID;
 
 /**
- * Fired on the server-side NeoForge event bus when an entity commits a crime against the colony.
+ * Represents a crime event committed against the colony.
  *
- * <p>Listeners (e.g. {@link com.colony.mod.town.TownManager}) should:
- * <ol>
- *   <li>Record the crime in {@link com.colony.mod.town.LawRecord}.</li>
- *   <li>Dispatch available {@link com.colony.mod.entity.ai.goals.EnforceOrderGoal}-capable
- *       guards toward the perpetrator.</li>
- * </ol>
+ * <p>Created when an entity commits a crime (e.g. assaulting a colonist) and passed to
+ * {@link com.colony.mod.town.TownManager#handleCrime} for recording and guard dispatch.
  */
-public class CrimeCommittedEvent extends Event {
+public class CrimeCommittedEvent {
 
     private final UUID perpetratorId;
     private final CrimeType crimeType;

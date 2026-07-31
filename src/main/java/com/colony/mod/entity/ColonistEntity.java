@@ -28,7 +28,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 import java.util.*;
 import java.util.concurrent.Future;
@@ -119,7 +119,7 @@ public class ColonistEntity extends PathfinderMob {
     }
 
     /**
-     * Defines the NeoForge attribute defaults for colonists.
+     * Defines the attribute defaults for colonists.
      * Called by the entity type builder during registration.
      */
     public static AttributeSupplier.Builder createAttributes() {
@@ -327,7 +327,7 @@ public class ColonistEntity extends PathfinderMob {
                 needs.getValue(NeedType.SAFETY),
                 relEntries
         );
-        PacketDistributor.sendToPlayer(player, packet);
+        ServerPlayNetworking.send(player, packet);
     }
 
     // -------------------------------------------------------------------------

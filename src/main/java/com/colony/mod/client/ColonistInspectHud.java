@@ -1,14 +1,10 @@
 package com.colony.mod.client;
 
-import com.colony.mod.ColonyMod;
 import com.colony.mod.network.ColonistInspectPacket;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
 /**
  * Client-side HUD overlay that displays colonist inspection data.
@@ -24,8 +20,7 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
  * <p>The overlay dismisses automatically after {@link #DISPLAY_TICKS} ticks or when the
  * player moves.
  */
-@OnlyIn(Dist.CLIENT)
-@EventBusSubscriber(modid = ColonyMod.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+@Environment(EnvType.CLIENT)
 public final class ColonistInspectHud {
 
     /** Number of ticks the HUD remains visible after receiving inspect data. */
@@ -55,8 +50,10 @@ public final class ColonistInspectHud {
         }
     }
 
-    @SubscribeEvent
-    public static void onRenderGui(RenderGuiEvent.Post event) {
+    /**
+     * Called each frame by {@link net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback}.
+     */
+    public static void onHudRender(GuiGraphics drawContext, net.minecraft.client.DeltaTracker tickDelta) {
         if (currentData == null || ticksRemaining <= 0) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -72,15 +69,14 @@ public final class ColonistInspectHud {
         }
 
         ticksRemaining--;
-        renderPanel(event.getGuiGraphics(), event.getPartialTick());
+        renderPanel(drawContext);
     }
 
-    private static void renderPanel(GuiGraphics gfx, float partialTick) {
+    private static void renderPanel(GuiGraphics gfx) {
         if (currentData == null) return;
 
         Minecraft mc = Minecraft.getInstance();
         int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
 
         int panelX = screenWidth - 160;
         int panelY = 10;

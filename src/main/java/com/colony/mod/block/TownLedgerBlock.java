@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 import javax.annotation.Nullable;
 
@@ -46,7 +46,7 @@ public class TownLedgerBlock extends BaseEntityBlock {
                                                Player player, BlockHitResult hitResult) {
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             // Request fresh ledger data from the server; the response packet opens the screen.
-            PacketDistributor.sendToPlayer(serverPlayer,
+            ServerPlayNetworking.send(serverPlayer,
                     com.colony.mod.network.TownLedgerResponsePacket.from(
                             com.colony.mod.town.TownManager.get(serverPlayer.serverLevel())));
         }

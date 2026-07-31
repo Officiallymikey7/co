@@ -15,6 +15,6 @@ import net.minecraft.world.level.block.state.BlockState;
 public class TownLedgerBlockEntity extends BlockEntity {
 
     public TownLedgerBlockEntity(BlockPos pos, BlockState state) {
-        super(ColonyBlockEntityTypes.TOWN_LEDGER.get(), pos, state);
+        super(ColonyBlockEntityTypes.TOWN_LEDGER, pos, state);
     }
 }

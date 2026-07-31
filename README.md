@@ -1,6 +1,6 @@
 # Colony Mod
 
-A self-governing autonomous colony simulation mod for Minecraft (NeoForge 1.21.1).
+A self-governing autonomous colony simulation mod for Minecraft (Fabric 1.21.1).
 
 ## Concept
 
@@ -86,9 +86,9 @@ Pairwise affinity values (−100 to +100) between every colonist pair.
 
 | Component       | Choice                         |
 |-----------------|-------------------------------|
-| Mod Loader      | NeoForge 1.21.1               |
+| Mod Loader      | Fabric 1.21.1                 |
 | Java Version    | Java 21                       |
-| Build System    | Gradle 8.8                    |
+| Build System    | Gradle 8 + Fabric Loom        |
 | Pathfinding     | Extension of `PathNavigation` |
 | Structure API   | `StructureTemplate` (NBT)     |
 | Animations      | GeckoLib / AzureLib (planned) |
@@ -99,8 +99,10 @@ Pairwise affinity values (−100 to +100) between every colonist pair.
 
 ```
 src/main/java/com/colony/mod/
-├── ColonyMod.java                      # Mod entry point
-├── registry/                           # Deferred registrations
+├── ColonyMod.java                      # Mod entry point (ModInitializer)
+├── ColonyClientMod.java                # Client entry point (ClientModInitializer)
+├── ColonyConfig.java                   # JSON config loader
+├── registry/                           # Fabric Registry registrations
 │   ├── ColonyEntityTypes.java
 │   ├── ColonyBlocks.java
 │   └── ColonyItems.java
@@ -155,7 +157,7 @@ src/main/java/com/colony/mod/
 - [x] **Phase 5** — Player Systems: employment & wages, housing market, laws, taxes & crime enforcement
 - [x] **Phase 6** — Performance: async AI executor, abstract tickless simulation for unloaded colonies
 - [x] **Phase 7** — UI: colonist inspector HUD overlay, Town Ledger block & screen
-- [x] **Phase 8** — Cross-mod API: `ColonySmartObjectAPI`, `SmartObjectDefinition`, TOML config
+- [x] **Phase 8** — Cross-mod API: `ColonySmartObjectAPI`, `SmartObjectDefinition`, JSON config
 
 ---
 
@@ -165,4 +167,8 @@ src/main/java/com/colony/mod/
 ./gradlew build
 ```
 
-Requires Java 21 and an internet connection to download NeoForge dependencies.
+Requires Java 21 and an internet connection to download Fabric dependencies.
+
+## Installation
+
+Drop the built JAR (from `build/libs/`) into the `mods/` folder of a Fabric 1.21.1 profile alongside **Fabric API**.

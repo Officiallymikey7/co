@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "colony",
+  "version": "${version}",
+  "name": "Colony",
+  "description": "A self-governing autonomous colony simulation mod. Villagers manage their own survival, relationships, and town expansion without player micromanagement.",
+  "authors": [
+    "ColonyTeam"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.colony.mod.ColonyMod"
+    ],
+    "client": [
+      "com.colony.mod.ColonyClientMod"
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1"
+  },
+  "accessWidener": "colony.accesswidener"
+}
