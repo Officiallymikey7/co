@@ -23,7 +23,7 @@ public final class ColonyEntityTypes {
                 EntityType.Builder.<ColonistEntity>of(ColonistEntity::new, MobCategory.CREATURE)
                         .sized(0.6f, 1.95f)
                         .clientTrackingRange(10)
-                        .build("colonist")
+                        .build(ColonyMod.MOD_ID + ":colonist")
         );
     }
 
