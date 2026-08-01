@@ -1,15 +1,10 @@
 package com.colony.mod.network;
 
 import com.colony.mod.ColonyMod;
-import com.colony.mod.client.TownLedgerScreen;
 import com.colony.mod.town.TownData;
 import com.colony.mod.town.TownManager;
 import com.colony.mod.town.builder.BuilderTask;
 import io.netty.buffer.ByteBuf;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -22,7 +17,7 @@ import java.util.List;
  * Client-bound packet containing the current Town Ledger data.
  *
  * <p>Sent in response to a {@link TownLedgerQueryPacket}. The client opens or refreshes the
- * {@link TownLedgerScreen} with this data.
+ * Town Ledger screen with this data.
  */
 public record TownLedgerResponsePacket(
         String townName,
@@ -72,28 +67,5 @@ public record TownLedgerResponsePacket(
                 crimes
         );
     }
-
-    /**
-     * Registers the client-side handler. Called from the client entry point.
-     */
-    @Environment(EnvType.CLIENT)
-    public static void registerClientHandler() {
-        ClientPlayNetworking.registerGlobalReceiver(TYPE,
-                (packet, context) -> context.client().execute(
-                        () -> handleClient(packet)));
-    }
-
-    /**
-     * Called on the client main thread when this packet arrives.
-     * Opens or refreshes the Town Ledger screen.
-     */
-    @Environment(EnvType.CLIENT)
-    public static void handleClient(TownLedgerResponsePacket packet) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof TownLedgerScreen ledgerScreen) {
-            ledgerScreen.refresh(packet);
-        } else {
-            mc.setScreen(new TownLedgerScreen(packet));
-        }
-    }
 }
+

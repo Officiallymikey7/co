@@ -14,6 +14,14 @@ base {
 
 loom {
     accessWidenerPath = file("src/main/resources/colony.accesswidener")
+    splitEnvironmentSourceSets()
+
+    mods {
+        "colony" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
 }
 
 java {
@@ -31,7 +39,6 @@ dependencies {
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-networking-api-v1:${fabric_version}"
 }
 
 processResources {

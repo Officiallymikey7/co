@@ -1,8 +1,6 @@
 package com.colony.mod.client;
 
 import com.colony.mod.network.ColonistInspectPacket;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -20,7 +18,6 @@ import net.minecraft.client.gui.GuiGraphics;
  * <p>The overlay dismisses automatically after {@link #DISPLAY_TICKS} ticks or when the
  * player moves.
  */
-@Environment(EnvType.CLIENT)
 public final class ColonistInspectHud {
 
     /** Number of ticks the HUD remains visible after receiving inspect data. */
