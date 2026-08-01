@@ -1,5 +1,6 @@
 package com.colony.mod.client;
 
+import com.colony.mod.ColonyMod;
 import com.colony.mod.entity.ColonistEntity;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelLayers;
@@ -18,7 +19,7 @@ import net.minecraft.resources.ResourceLocation;
 public class ColonistRenderer extends HumanoidMobRenderer<ColonistEntity, HumanoidModel<ColonistEntity>> {
 
     private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("colony", "textures/entity/colonist.png");
+            ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "textures/entity/colonist.png");
 
     public ColonistRenderer(EntityRendererProvider.Context context) {
         super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.5f);
