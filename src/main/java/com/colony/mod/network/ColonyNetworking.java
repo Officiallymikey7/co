@@ -1,8 +1,6 @@
 package com.colony.mod.network;
 
 import com.colony.mod.ColonyMod;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
@@ -11,7 +9,8 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
  *
  * <p>Server-bound packets are registered with {@code playC2S}; client-bound packets
  * with {@code playS2C}. Server-side handlers are registered here; client-side handlers
- * are registered in {@link #registerClient()} (called from the client entry point).
+ * are registered in {@code ColonyClientNetworking#registerClient()}
+ * (called from the client entry point).
  */
 public final class ColonyNetworking {
 
@@ -35,13 +34,5 @@ public final class ColonyNetworking {
         ServerPlayNetworking.registerGlobalReceiver(TownLedgerQueryPacket.TYPE,
                 TownLedgerQueryPacket::handle);
     }
-
-    /**
-     * Registers client-side handlers for server → client packets. Called during client init.
-     */
-    @Environment(EnvType.CLIENT)
-    public static void registerClient() {
-        ColonistInspectPacket.registerClientHandler();
-        TownLedgerResponsePacket.registerClientHandler();
-    }
 }
+

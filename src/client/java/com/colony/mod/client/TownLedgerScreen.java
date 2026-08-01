@@ -2,8 +2,6 @@ package com.colony.mod.client;
 
 import com.colony.mod.network.TownLedgerQueryPacket;
 import com.colony.mod.network.TownLedgerResponsePacket;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -27,7 +25,6 @@ import java.util.List;
  *   <li>Recent crime log (last 10 entries)</li>
  * </ul>
  */
-@Environment(EnvType.CLIENT)
 public class TownLedgerScreen extends Screen {
 
     private TownLedgerResponsePacket data;
