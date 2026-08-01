@@ -1,5 +1,6 @@
 package com.colony.mod.block;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
@@ -26,8 +27,15 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TownLedgerBlock extends BaseEntityBlock {
 
+    public static final MapCodec<TownLedgerBlock> CODEC = simpleCodec(TownLedgerBlock::new);
+
     public TownLedgerBlock(BlockBehaviour.Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
     }
 
     @Override

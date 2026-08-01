@@ -89,7 +89,7 @@ public class ColonyStateMonitor {
      */
     private void checkHousing(TownData townData) {
         if (townData.getPopulation() >= townData.getHousingCapacity()) {
-            int max = ColonyConfig.SPEC.isLoaded() ? ColonyConfig.MAX_POPULATION.get() : 100;
+            int max = ColonyConfig.getMaxPopulation();
             if (townData.getPopulation() >= max) return; // hard cap reached
             if (pendingTasks.size() >= ColonyConfig.getMaxConcurrentBuildTasks()) return;
             BlockPos buildSite = findBuildSite(townData.getTownCenter(), 30);
