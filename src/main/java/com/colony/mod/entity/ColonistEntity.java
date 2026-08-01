@@ -134,7 +134,7 @@ public class ColonistEntity extends PathfinderMob {
     // Goal / action registration
     // -------------------------------------------------------------------------
 
-    private void registerGoals() {
+    protected void registerGoals() {
         goals.add(new SleepGoal());
         goals.add(new EatGoal());
         goals.add(new SocializeGoal());

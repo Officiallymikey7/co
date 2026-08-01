@@ -131,4 +131,8 @@ public final class ColonyConfig {
     public static int getMaxConcurrentBuildTasks() {
         return data.maxConcurrentBuildTasks;
     }
+
+    public static int getMaxPopulation() {
+        return data.maxPopulation;
+    }
 }
