@@ -2,7 +2,7 @@ package com.colony.mod.network;
 
 import com.colony.mod.client.ColonistInspectHud;
 import com.colony.mod.client.TownLedgerScreen;
-import net.fabricmc.fabric.api.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 
 /**
