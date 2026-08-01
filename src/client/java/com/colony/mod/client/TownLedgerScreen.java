@@ -2,7 +2,7 @@ package com.colony.mod.client;
 
 import com.colony.mod.network.TownLedgerQueryPacket;
 import com.colony.mod.network.TownLedgerResponsePacket;
-import net.fabricmc.fabric.api.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
