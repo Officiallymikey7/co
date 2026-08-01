@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The Town Ledger Block — a physical block placed by the colony builder at the town centre.
