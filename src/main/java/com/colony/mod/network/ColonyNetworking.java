@@ -9,7 +9,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
  *
  * <p>Server-bound packets are registered with {@code playC2S}; client-bound packets
  * with {@code playS2C}. Server-side handlers are registered here; client-side handlers
- * are registered in {@link com.colony.mod.network.ColonyClientNetworking#registerClient()}
+ * are registered in {@code ColonyClientNetworking#registerClient()}
  * (called from the client entry point).
  */
 public final class ColonyNetworking {
