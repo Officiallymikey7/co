@@ -1,11 +1,13 @@
 package com.colony.mod;
 
 import com.colony.mod.client.ColonistInspectHud;
+import com.colony.mod.client.ColonistModel;
 import com.colony.mod.client.ColonistRenderer;
 import com.colony.mod.network.ColonyClientNetworking;
 import com.colony.mod.registry.ColonyEntityTypes;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 
 /**
@@ -18,6 +20,8 @@ public class ColonyClientMod implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        EntityModelLayerRegistry.registerModelLayer(ColonistModel.LAYER_LOCATION, ColonistModel::createBodyLayer);
+
         // Register entity renderer — must happen before any colonist is rendered
         EntityRendererRegistry.register(ColonyEntityTypes.COLONIST, ColonistRenderer::new);
 

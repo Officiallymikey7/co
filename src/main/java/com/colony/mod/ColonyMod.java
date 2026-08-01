@@ -8,6 +8,8 @@ import com.colony.mod.registry.ColonyBlockEntityTypes;
 import com.colony.mod.registry.ColonyBlocks;
 import com.colony.mod.registry.ColonyEntityTypes;
 import com.colony.mod.registry.ColonyItems;
+import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import com.colony.mod.town.CrimeType;
 import com.colony.mod.town.TownManager;
 import net.fabricmc.api.ModInitializer;
@@ -15,9 +17,11 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
+import net.minecraft.world.entity.SpawnPlacements;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.level.levelgen.Heightmap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,6 +63,20 @@ public class ColonyMod implements ModInitializer {
 
         // Register entity attributes
         FabricDefaultAttributeRegistry.register(ColonyEntityTypes.COLONIST, ColonistEntity.createAttributes());
+        SpawnPlacements.register(
+                ColonyEntityTypes.COLONIST,
+                SpawnPlacements.Type.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                ColonistEntity::checkColonistSpawnRules
+        );
+        BiomeModifications.addSpawn(
+                BiomeSelectors.foundInOverworld(),
+                net.minecraft.world.entity.MobCategory.CREATURE,
+                ColonyEntityTypes.COLONIST,
+                8,
+                1,
+                3
+        );
 
         // Load config from disk
         ColonyConfig.load();
@@ -123,4 +141,3 @@ public class ColonyMod implements ModInitializer {
                 com.colony.mod.smartobject.ColonySmartObjectAPI.size());
     }
 }
-

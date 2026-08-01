@@ -20,13 +20,18 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevelAccessor;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
@@ -128,6 +133,19 @@ public class ColonistEntity extends PathfinderMob {
                 .add(Attributes.MOVEMENT_SPEED, 0.25)
                 .add(Attributes.FOLLOW_RANGE, 32.0)
                 .add(Attributes.ATTACK_DAMAGE, 1.0);
+    }
+
+    public static boolean checkColonistSpawnRules(
+            EntityType<ColonistEntity> entityType,
+            ServerLevelAccessor level,
+            EntitySpawnReason spawnReason,
+            BlockPos pos,
+            RandomSource random
+    ) {
+        return level.getBlockState(pos.below()).isSolid()
+                && level.getBlockState(pos).isAir()
+                && level.getBlockState(pos.above()).isAir()
+                && Mob.checkMobSpawnRules(entityType, level, spawnReason, pos, random);
     }
 
     // -------------------------------------------------------------------------
