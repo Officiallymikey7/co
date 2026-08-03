@@ -30,7 +30,7 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, CustomModel> {
     private static final int FULL_BRIGHT = 15728640;
 
     private static final ResourceLocation FALLBACK_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "textures/entity/colony/male1.png");
+            ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "textures/entity/colonist.png");
 
     public ColonistRenderer(EntityRendererProvider.Context context) {
         super(context, new CustomModel(context.bakeLayer(CustomModel.LAYER_LOCATION)), 0.5f);

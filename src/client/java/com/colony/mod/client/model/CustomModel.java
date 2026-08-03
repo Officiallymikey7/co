@@ -16,6 +16,7 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 
 /**
  * Male colony entity model, generated from Blockbench 5.1.6.
@@ -30,11 +31,19 @@ public class CustomModel extends EntityModel<ColonistEntity> {
             ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "colony_male"), "main");
 
     private final ModelPart waist;
+    private final ModelPart head;
+    private final ModelPart body;
+    private final ModelPart rightArm;
+    private final ModelPart leftArm;
     private final ModelPart rightLeg;
     private final ModelPart leftLeg;
 
     public CustomModel(ModelPart root) {
         this.waist = root.getChild("Waist");
+        this.head = this.waist.getChild("Head");
+        this.body = this.waist.getChild("Body");
+        this.rightArm = this.waist.getChild("Right Arm");
+        this.leftArm = this.waist.getChild("Left Arm");
         this.rightLeg = root.getChild("Right Leg");
         this.leftLeg = root.getChild("Left Leg");
     }
@@ -88,6 +97,23 @@ public class CustomModel extends EntityModel<ColonistEntity> {
     @Override
     public void setupAnim(ColonistEntity entity, float limbSwing, float limbSwingAmount,
                           float ageInTicks, float netHeadYaw, float headPitch) {
+        // Head look
+        this.head.yRot = netHeadYaw * ((float) Math.PI / 180.0F);
+        this.head.xRot = headPitch * ((float) Math.PI / 180.0F);
+
+        // Walk cycle
+        this.rightArm.xRot = Mth.cos(limbSwing * 0.6662F + (float) Math.PI) * 1.0F * limbSwingAmount;
+        this.leftArm.xRot = Mth.cos(limbSwing * 0.6662F) * 1.0F * limbSwingAmount;
+        this.rightLeg.xRot = Mth.cos(limbSwing * 0.6662F) * 1.4F * limbSwingAmount;
+        this.leftLeg.xRot = Mth.cos(limbSwing * 0.6662F + (float) Math.PI) * 1.4F * limbSwingAmount;
+
+        // Idle breathing
+        float breathing = Mth.sin(ageInTicks * 0.09F) * 0.05F;
+        this.body.xRot = breathing * 0.2F;
+        this.rightArm.zRot = breathing + 0.05F;
+        this.leftArm.zRot = -breathing - 0.05F;
+        this.head.y += breathing * 0.5F;
+        this.body.y += breathing * 0.25F;
     }
 
     @Override
