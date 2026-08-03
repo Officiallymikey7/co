@@ -45,11 +45,17 @@ public enum ColonistVariant {
 
     private final String id;
     private final ResourceLocation textureLocation;
+    private final ResourceLocation emissiveTextureLocation;
 
     ColonistVariant(String id, String textureFileName) {
         this.id = id;
         this.textureLocation = ResourceLocation.fromNamespaceAndPath(
                 ColonyMod.MOD_ID, "textures/entity/" + textureFileName);
+        String emissiveFileName = textureFileName.endsWith(".png")
+                ? textureFileName.substring(0, textureFileName.length() - 4) + "_eyes.png"
+                : textureFileName + "_eyes.png";
+        this.emissiveTextureLocation = ResourceLocation.fromNamespaceAndPath(
+                ColonyMod.MOD_ID, "textures/entity/" + emissiveFileName);
     }
 
     public String id() {
@@ -58,6 +64,10 @@ public enum ColonistVariant {
 
     public ResourceLocation textureLocation() {
         return textureLocation;
+    }
+
+    public ResourceLocation emissiveTextureLocation() {
+        return emissiveTextureLocation;
     }
 
     public static ColonistVariant fromId(String id) {
