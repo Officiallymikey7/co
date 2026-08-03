@@ -1,7 +1,7 @@
 package com.colony.mod.client;
 
 import com.colony.mod.ColonyMod;
-import com.colony.mod.client.model.ColonistModel;
+import com.colony.mod.client.model.CustomModel;
 import com.colony.mod.entity.ColonistEntity;
 import com.colony.mod.entity.ColonistVariant;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -22,9 +22,10 @@ import java.util.Map;
 /**
  * Client-side renderer for {@link ColonistEntity}.
  *
- * <p>Uses a dedicated baked model layer plus an optional emissive overlay pass.
+ * <p>Uses the male colony model ({@link CustomModel}) baked via
+ * {@link CustomModel#LAYER_LOCATION}, plus an optional emissive overlay pass.
  */
-public class ColonistRenderer extends MobRenderer<ColonistEntity, ColonistModel> {
+public class ColonistRenderer extends MobRenderer<ColonistEntity, CustomModel> {
     private static final float BASE_SCALE = 0.9375F;
     private static final int FULL_BRIGHT = 15728640;
 
@@ -32,7 +33,7 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, ColonistModel>
             ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "textures/entity/colonist.png");
 
     public ColonistRenderer(EntityRendererProvider.Context context) {
-        super(context, new ColonistModel(context.bakeLayer(ColonistModel.LAYER_LOCATION)), 0.5f);
+        super(context, new CustomModel(context.bakeLayer(CustomModel.LAYER_LOCATION)), 0.5f);
         this.addLayer(new ColonistEmissiveLayer(this));
     }
 
@@ -62,10 +63,10 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, ColonistModel>
         return glowing ? RenderType.outline(texture) : null;
     }
 
-    private static final class ColonistEmissiveLayer extends RenderLayer<ColonistEntity, ColonistModel> {
+    private static final class ColonistEmissiveLayer extends RenderLayer<ColonistEntity, CustomModel> {
         private final Map<ResourceLocation, Boolean> textureCache = new HashMap<>();
 
-        private ColonistEmissiveLayer(RenderLayerParent<ColonistEntity, ColonistModel> parent) {
+        private ColonistEmissiveLayer(RenderLayerParent<ColonistEntity, CustomModel> parent) {
             super(parent);
         }
 

@@ -3,6 +3,7 @@ package com.colony.mod;
 import com.colony.mod.client.ColonistInspectHud;
 import com.colony.mod.client.ColonistRenderer;
 import com.colony.mod.client.model.ColonistModel;
+import com.colony.mod.client.model.CustomModel;
 import com.colony.mod.network.ColonyClientNetworking;
 import com.colony.mod.registry.ColonyEntityTypes;
 import net.fabricmc.api.ClientModInitializer;
@@ -21,6 +22,7 @@ public class ColonyClientMod implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EntityModelLayerRegistry.registerModelLayer(ColonistModel.LAYER_LOCATION, ColonistModel::createBodyLayer);
+        EntityModelLayerRegistry.registerModelLayer(CustomModel.LAYER_LOCATION, CustomModel::createBodyLayer);
 
         // Register entity renderer — must happen before any colonist is rendered
         EntityRendererRegistry.register(ColonyEntityTypes.COLONIST, ColonistRenderer::new);
