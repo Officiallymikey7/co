@@ -91,9 +91,14 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, ColonistModel>
         }
 
         private boolean hasTexture(ResourceLocation emissiveTexture) {
-            return this.textureCache.computeIfAbsent(
-                    emissiveTexture,
-                    texture -> Minecraft.getInstance().getResourceManager().getResource(texture).isPresent());
+            if (this.textureCache.containsKey(emissiveTexture)) {
+                return this.textureCache.get(emissiveTexture);
+            }
+            boolean present = Minecraft.getInstance().getResourceManager().getResource(emissiveTexture).isPresent();
+            if (present) {
+                this.textureCache.put(emissiveTexture, true);
+            }
+            return present;
         }
     }
 }

@@ -117,6 +117,7 @@ public class ColonistModel extends HierarchicalModel<ColonistEntity> {
         this.rightArm.zRot = breathing + 0.05F;
         this.leftArm.zRot = -breathing - 0.05F;
         this.head.y += breathing * 0.5F;
+        this.hat.y += breathing * 0.5F;
         this.body.y += breathing * 0.25F;
     }
 
