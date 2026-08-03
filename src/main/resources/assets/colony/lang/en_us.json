@@ -1,7 +1,7 @@
 {
   "item.colony.colony_currency": "Colony Currency",
   "item.colony.colonist_spawn_egg": "Colonist Spawn Egg",
-  "item.colony.colonist_spawn_egg.tooltip": "Use EntityTag.variant on this egg to spawn a specific colonist skin.",
+  "item.colony.colonist_spawn_egg.tooltip": "Use minecraft:entity_data={id:\"colony:colonist\",variant:\"<variant_id>\"} on this egg to spawn a specific colonist skin.",
   "item.colony.colonist_spawn_egg.variants": "Variant IDs: %s",
   "item.colony.colonist_spawn_egg.selected_variant": "Selected variant: %s",
   "entity.colony.colonist": "Colonist",

@@ -25,7 +25,8 @@ public final class ColonyItems {
     /**
      * Spawn egg for the {@link com.colony.mod.entity.ColonistEntity}.
      * Allows players and data-packs to spawn colonists via /give or creative inventory.
-     * Specific texture variants can be selected with {@code EntityTag.variant=<variant_id>}.
+     * Specific texture variants can be selected with
+     * {@code minecraft:entity_data={id:"colony:colonist",variant="<variant_id>"}}.
      * Must be registered after {@link ColonyEntityTypes#COLONIST} is set.
      */
     public static SpawnEggItem COLONIST_SPAWN_EGG;
