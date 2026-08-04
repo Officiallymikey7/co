@@ -5,6 +5,7 @@ import com.colony.mod.entity.ai.ActionContext;
 import com.colony.mod.entity.ai.goap.GOAPGoal;
 import com.colony.mod.entity.ai.goap.GOAPAction;
 import com.colony.mod.entity.ai.goap.GOAPPlanner;
+import com.colony.mod.entity.ai.actions.*;
 import com.colony.mod.entity.ai.goals.*;
 import com.colony.mod.entity.needs.NeedsComponent;
 import com.colony.mod.entity.needs.NeedType;
@@ -13,6 +14,7 @@ import com.colony.mod.network.ColonistInspectPacket;
 import com.colony.mod.performance.ColonyAIExecutor;
 import com.colony.mod.social.RelationshipData;
 import com.colony.mod.social.SocialNetwork;
+import com.colony.mod.smartobject.SmartObjectRegistry;
 import com.colony.mod.town.JobRole;
 import com.colony.mod.town.TownManager;
 import net.minecraft.nbt.CompoundTag;
@@ -150,6 +152,13 @@ public class ColonistEntity extends PathfinderMob {
             goals.add(new SocializeGoal());
             goals.add(new SeekSafetyGoal());
             goals.add(new WorkGoal());
+
+        availableActions.clear();
+        availableActions.add(new SleepAction());
+        availableActions.add(new EatAction());
+        availableActions.add(new SocializeAction());
+        availableActions.add(new SeekSafetyAction());
+        availableActions.add(new WorkAction());
     }
 
     // -------------------------------------------------------------------------
@@ -291,7 +300,7 @@ public class ColonistEntity extends PathfinderMob {
 
     /**
      * Assembles the current world state as a string→Object map for the GOAP planner.
-     * Values reflect what the colonist knows right now.
+     * Values reflect what the colonist knows right now, including dynamic smart-object scanning.
      */
     private Map<String, Object> buildCurrentWorldState() {
         Map<String, Object> state = new HashMap<>();
@@ -300,8 +309,22 @@ public class ColonistEntity extends PathfinderMob {
         state.put("colonist_socialised", needs.getValue(NeedType.SOCIAL) > 50f);
         state.put("colonist_safe", needs.getValue(NeedType.SAFETY) > 40f);
         state.put("colonist_worked", false);
-        state.put("has_bed", false);       // updated by smart-object scanner
-        state.put("food_available", false); // updated by smart-object scanner
+
+        // Dynamically determine resource availability by scanning nearby smart objects
+        boolean hasBed = false;
+        boolean hasFoodSource = false;
+        if (level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            TownManager manager = TownManager.get(serverLevel);
+            if (manager != null) {
+                SmartObjectRegistry registry = manager.getTownData().getSmartObjectRegistry();
+                net.minecraft.core.BlockPos origin = blockPosition();
+                double scanRadiusSq = 64.0 * 64.0;
+                hasBed = !registry.findNearest(NeedType.ENERGY, origin, scanRadiusSq).isEmpty();
+                hasFoodSource = !registry.findNearest(NeedType.HUNGER, origin, scanRadiusSq).isEmpty();
+            }
+        }
+        state.put("has_bed", hasBed);
+        state.put("food_available", hasFoodSource);
         return state;
     }
 
