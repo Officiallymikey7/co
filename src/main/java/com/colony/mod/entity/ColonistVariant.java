@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * Canonical list of supported colonist texture variants.
  */
 public enum ColonistVariant {
-    DEFAULT("colonist", "colonist.png"),
+    DEFAULT("male1", "male1.png"),
     ASCENDED("ascended", "ascended.png"),
     ASCENDED_2("ascended_2", "ascended2.png"),
     ASCENDED_3("ascended_3", "ascended3.png"),
