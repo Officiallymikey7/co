@@ -37,8 +37,10 @@ public class CustomModel extends EntityModel<ColonistEntity> {
     private final ModelPart leftArm;
     private final ModelPart rightLeg;
     private final ModelPart leftLeg;
+    private final ModelPart root;
 
     public CustomModel(ModelPart root) {
+        this.root = root;
         this.waist = root.getChild("Waist");
         this.head = this.waist.getChild("Head");
         this.body = this.waist.getChild("Body");
@@ -97,6 +99,8 @@ public class CustomModel extends EntityModel<ColonistEntity> {
     @Override
     public void setupAnim(ColonistEntity entity, float limbSwing, float limbSwingAmount,
                           float ageInTicks, float netHeadYaw, float headPitch) {
+        this.root.getAllParts().forEach(ModelPart::resetPose);
+
         // Head look
         this.head.yRot = netHeadYaw * ((float) Math.PI / 180.0F);
         this.head.xRot = headPitch * ((float) Math.PI / 180.0F);
