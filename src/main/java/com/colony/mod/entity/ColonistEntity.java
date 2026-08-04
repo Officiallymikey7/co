@@ -76,7 +76,7 @@ public class ColonistEntity extends PathfinderMob {
     private final DailySchedule schedule = new DailySchedule();
 
     /** All goals this colonist can pursue, evaluated each AI cycle. */
-    private final List<GOAPGoal> goals = new ArrayList<>();
+    private List<GOAPGoal> goals;
 
     /** All atomic GOAP actions available to this colonist. */
     private final List<GOAPAction> availableActions = new ArrayList<>();
@@ -143,6 +143,7 @@ public class ColonistEntity extends PathfinderMob {
     // -------------------------------------------------------------------------
 
     protected void registerGoals() {
+        if (goals == null) goals = new ArrayList<>();
         goals.add(new SleepGoal());
         goals.add(new EatGoal());
         goals.add(new SocializeGoal());
