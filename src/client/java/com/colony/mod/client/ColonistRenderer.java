@@ -84,7 +84,8 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, CustomModel> {
                     poseStack,
                     consumer,
                     FULL_BRIGHT,
-                    OverlayTexture.NO_OVERLAY);
+                    OverlayTexture.NO_OVERLAY,
+                    0xFFFFFFFF);
         }
 
         private boolean hasTexture(ResourceLocation emissiveTexture) {
