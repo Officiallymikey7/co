@@ -3,7 +3,6 @@ package com.colony.mod.client;
 import com.colony.mod.ColonyMod;
 import com.colony.mod.client.model.CustomModel;
 import com.colony.mod.entity.ColonistEntity;
-import com.colony.mod.entity.ColonistVariant;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -32,6 +31,8 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, CustomModel> {
     private static final ResourceLocation FALLBACK_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "textures/entity/male1.png");
 
+    private final Map<ResourceLocation, Boolean> textureExistsCache = new HashMap<>();
+
     public ColonistRenderer(EntityRendererProvider.Context context) {
         super(context, new CustomModel(context.bakeLayer(CustomModel.LAYER_LOCATION)), 0.5f);
         this.addLayer(new ColonistEmissiveLayer(this));
@@ -39,9 +40,13 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, CustomModel> {
 
     @Override
     public ResourceLocation getTextureLocation(ColonistEntity entity) {
-        ColonistVariant variant = entity.getVariant();
-        ResourceLocation texture = variant.textureLocation();
-        return texture != null ? texture : FALLBACK_TEXTURE;
+        ResourceLocation texture = entity.getVariant().textureLocation();
+        if (texture == null) {
+            return FALLBACK_TEXTURE;
+        }
+        Boolean exists = textureExistsCache.computeIfAbsent(texture,
+                loc -> Minecraft.getInstance().getResourceManager().getResource(loc).isPresent());
+        return exists ? texture : FALLBACK_TEXTURE;
     }
 
     @Override
