@@ -24,7 +24,7 @@ import java.util.Random;
  * [ Colony State Monitor ]
  *          │
  *          ├── Population >= Housing Capacity?  ──> Build House Blueprint
- *          ├── Food Storage < Low Threshold?    ──> Assign Farmer / Build Farm
+ *          ├── Food Storage < Low Threshold?    ──> Build Farm
  *          └── Defence Level Low?               ──> Build Guard Post
  * </pre>
  */
@@ -100,19 +100,15 @@ public class ColonyStateMonitor {
     }
 
     /**
-     * If food stores are critically low, assign a farmer or build a farm.
+     * If food stores are critically low, build a farm. Colonists are never force-assigned a
+     * job — they remain free citizens and may choose their own role.
      */
     private void checkFood(TownData townData) {
         if (townData.getFoodStoreLevel() < FOOD_LOW_THRESHOLD) {
-            List<java.util.UUID> unemployed = townData.getUnemployed();
-            if (!unemployed.isEmpty()) {
-                townData.assignJob(unemployed.get(0), JobRole.FARMER);
-            } else {
-                if (pendingTasks.size() >= ColonyConfig.getMaxConcurrentBuildTasks()) return;
-                BlockPos buildSite = findBuildSite(townData.getTownCenter(), 40);
-                if (buildSite != null) {
-                    enqueueBuild(StructureBlueprintType.FARM, buildSite);
-                }
+            if (pendingTasks.size() >= ColonyConfig.getMaxConcurrentBuildTasks()) return;
+            BlockPos buildSite = findBuildSite(townData.getTownCenter(), 40);
+            if (buildSite != null) {
+                enqueueBuild(StructureBlueprintType.FARM, buildSite);
             }
         }
     }
