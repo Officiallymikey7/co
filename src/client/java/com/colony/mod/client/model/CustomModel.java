@@ -118,10 +118,9 @@ public class CustomModel extends EntityModel<ColonistEntity> {
 
     @Override
     public void renderToBuffer(PoseStack poseStack, VertexConsumer vertexConsumer,
-                               int packedLight, int packedOverlay,
-                               float red, float green, float blue, float alpha) {
-        waist.render(poseStack, vertexConsumer, packedLight, packedOverlay, red, green, blue, alpha);
-        rightLeg.render(poseStack, vertexConsumer, packedLight, packedOverlay, red, green, blue, alpha);
-        leftLeg.render(poseStack, vertexConsumer, packedLight, packedOverlay, red, green, blue, alpha);
+                               int packedLight, int packedOverlay, int packedColor) {
+        waist.render(poseStack, vertexConsumer, packedLight, packedOverlay, packedColor);
+        rightLeg.render(poseStack, vertexConsumer, packedLight, packedOverlay, packedColor);
+        leftLeg.render(poseStack, vertexConsumer, packedLight, packedOverlay, packedColor);
     }
 }
