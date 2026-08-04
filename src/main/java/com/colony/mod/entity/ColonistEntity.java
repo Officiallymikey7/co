@@ -144,11 +144,12 @@ public class ColonistEntity extends PathfinderMob {
 
     protected void registerGoals() {
         if (goals == null) goals = new ArrayList<>();
-        goals.add(new SleepGoal());
-        goals.add(new EatGoal());
-        goals.add(new SocializeGoal());
-        goals.add(new SeekSafetyGoal());
-        goals.add(new WorkGoal());
+            else goals.clear();
+            goals.add(new SleepGoal());
+            goals.add(new EatGoal());
+            goals.add(new SocializeGoal());
+            goals.add(new SeekSafetyGoal());
+            goals.add(new WorkGoal());
     }
 
     // -------------------------------------------------------------------------
