@@ -144,14 +144,16 @@ public class ColonistEntity extends PathfinderMob {
     // Goal / action registration
     // -------------------------------------------------------------------------
 
+    @Override
     protected void registerGoals() {
+        super.registerGoals();
         if (goals == null) goals = new ArrayList<>();
-            else goals.clear();
-            goals.add(new SleepGoal());
-            goals.add(new EatGoal());
-            goals.add(new SocializeGoal());
-            goals.add(new SeekSafetyGoal());
-            goals.add(new WorkGoal());
+        else goals.clear();
+        goals.add(new SleepGoal());
+        goals.add(new EatGoal());
+        goals.add(new SocializeGoal());
+        goals.add(new SeekSafetyGoal());
+        goals.add(new WorkGoal());
 
         if (availableActions == null) availableActions = new ArrayList<>();
         else availableActions.clear();
@@ -196,26 +198,6 @@ public class ColonistEntity extends PathfinderMob {
             needs.tick();
             tickAI();
         }
-    }
-
-    @Override
-    protected void registerGoals() {
-        super.registerGoals();
-        if (goals == null) goals = new ArrayList<>();
-        else goals.clear();
-        goals.add(new SleepGoal());
-        goals.add(new EatGoal());
-        goals.add(new SocializeGoal());
-        goals.add(new SeekSafetyGoal());
-        goals.add(new WorkGoal());
-
-        if (availableActions == null) availableActions = new ArrayList<>();
-        else availableActions.clear();
-        availableActions.add(new SleepAction());
-        availableActions.add(new EatAction());
-        availableActions.add(new SocializeAction());
-        availableActions.add(new SeekSafetyAction());
-        availableActions.add(new WorkAction());
     }
 
     /**
