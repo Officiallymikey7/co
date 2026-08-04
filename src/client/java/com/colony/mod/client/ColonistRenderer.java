@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +33,7 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, CustomModel> {
             ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "textures/entity/male1.png");
 
     private final Map<ResourceLocation, Boolean> textureExistsCache = new HashMap<>();
+    private ResourceManager lastResourceManager = null;
 
     public ColonistRenderer(EntityRendererProvider.Context context) {
         super(context, new CustomModel(context.bakeLayer(CustomModel.LAYER_LOCATION)), 0.5f);
@@ -44,8 +46,14 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, CustomModel> {
         if (texture == null) {
             return FALLBACK_TEXTURE;
         }
+        ResourceManager rm =
+                Minecraft.getInstance().getResourceManager();
+        if (rm != lastResourceManager) {
+            textureExistsCache.clear();
+            lastResourceManager = rm;
+        }
         Boolean exists = textureExistsCache.computeIfAbsent(texture,
-                loc -> Minecraft.getInstance().getResourceManager().getResource(loc).isPresent());
+                loc -> rm.getResource(loc).isPresent());
         return exists ? texture : FALLBACK_TEXTURE;
     }
 
@@ -70,6 +78,7 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, CustomModel> {
 
     private static final class ColonistEmissiveLayer extends RenderLayer<ColonistEntity, CustomModel> {
         private final Map<ResourceLocation, Boolean> textureCache = new HashMap<>();
+        private ResourceManager lastResourceManager = null;
 
         private ColonistEmissiveLayer(RenderLayerParent<ColonistEntity, CustomModel> parent) {
             super(parent);
@@ -94,14 +103,14 @@ public class ColonistRenderer extends MobRenderer<ColonistEntity, CustomModel> {
         }
 
         private boolean hasTexture(ResourceLocation emissiveTexture) {
-            if (this.textureCache.containsKey(emissiveTexture)) {
-                return this.textureCache.get(emissiveTexture);
+            ResourceManager rm =
+                    Minecraft.getInstance().getResourceManager();
+            if (rm != lastResourceManager) {
+                textureCache.clear();
+                lastResourceManager = rm;
             }
-            boolean present = Minecraft.getInstance().getResourceManager().getResource(emissiveTexture).isPresent();
-            if (present) {
-                this.textureCache.put(emissiveTexture, true);
-            }
-            return present;
+            return textureCache.computeIfAbsent(emissiveTexture,
+                    loc -> rm.getResource(loc).isPresent());
         }
     }
 }
