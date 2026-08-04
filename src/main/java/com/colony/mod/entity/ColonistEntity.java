@@ -81,7 +81,7 @@ public class ColonistEntity extends PathfinderMob {
     private List<GOAPGoal> goals;
 
     /** All atomic GOAP actions available to this colonist. */
-    private final List<GOAPAction> availableActions = new ArrayList<>();
+    private List<GOAPAction> availableActions;
 
     /** Current active plan consumed on the main thread. */
     private final Deque<GOAPAction> currentPlan = new ArrayDeque<>();
@@ -153,7 +153,8 @@ public class ColonistEntity extends PathfinderMob {
             goals.add(new SeekSafetyGoal());
             goals.add(new WorkGoal());
 
-        availableActions.clear();
+        if (availableActions == null) availableActions = new ArrayList<>();
+        else availableActions.clear();
         availableActions.add(new SleepAction());
         availableActions.add(new EatAction());
         availableActions.add(new SocializeAction());
