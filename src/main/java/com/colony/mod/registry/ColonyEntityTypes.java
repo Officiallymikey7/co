@@ -17,13 +17,14 @@ public final class ColonyEntityTypes {
     public static EntityType<ColonistEntity> COLONIST;
 
     public static void register() {
+        ResourceLocation colonistId = ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "colonist");
         COLONIST = Registry.register(
                 BuiltInRegistries.ENTITY_TYPE,
-                ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "colonist"),
+                colonistId,
                 EntityType.Builder.<ColonistEntity>of(ColonistEntity::new, MobCategory.CREATURE)
                         .sized(0.6f, 1.95f)
                         .clientTrackingRange(10)
-                        .build(ColonyMod.MOD_ID + ":colonist")
+                        .build(colonistId.toString())
         );
     }
 

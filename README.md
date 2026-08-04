@@ -4,7 +4,17 @@ A self-governing autonomous colony simulation mod for Minecraft (Fabric 1.21.1).
 
 ## Concept
 
-In standard colony-sim mods the player acts as an "invisible god," placing supply camps and assigning jobs. **Colony** flips that dynamic: the town operates on emergent AI where **villagers manage their own survival, relationships, and expansion** without player micromanagement. The player is an equal citizen in a self-governing world.
+In standard colony-sim mods the player acts as an "invisible god," placing supply camps and assigning jobs. **Colony** flips that dynamic: the town operates on emergent AI where **villagers manage their own needs, choose their own work, and expand the settlement when conditions demand it**.
+
+---
+
+## Features
+
+- **Utility AI + GOAP planning** for colonist decision-making
+- **Smart objects** like beds, ovens, guard posts, and social spaces
+- **Autonomous town expansion** based on housing, food, and defence
+- **Daily schedules** that drive work, rest, and social behaviour
+- **Social network simulation** with affinity between colonists
 
 ---
 

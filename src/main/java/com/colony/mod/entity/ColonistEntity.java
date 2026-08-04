@@ -20,15 +20,20 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.Future;
@@ -60,6 +65,9 @@ public class ColonistEntity extends PathfinderMob {
     private static final EntityDataAccessor<String> DATA_COLONIST_NAME =
             SynchedEntityData.defineId(ColonistEntity.class, EntityDataSerializers.STRING);
 
+    private static final EntityDataAccessor<String> DATA_VARIANT =
+            SynchedEntityData.defineId(ColonistEntity.class, EntityDataSerializers.STRING);
+
     // -------------------------------------------------------------------------
     // AI systems
     // -------------------------------------------------------------------------
@@ -68,7 +76,7 @@ public class ColonistEntity extends PathfinderMob {
     private final DailySchedule schedule = new DailySchedule();
 
     /** All goals this colonist can pursue, evaluated each AI cycle. */
-    private final List<GOAPGoal> goals = new ArrayList<>();
+    private List<GOAPGoal> goals;
 
     /** All atomic GOAP actions available to this colonist. */
     private final List<GOAPAction> availableActions = new ArrayList<>();
@@ -135,11 +143,13 @@ public class ColonistEntity extends PathfinderMob {
     // -------------------------------------------------------------------------
 
     protected void registerGoals() {
-        goals.add(new SleepGoal());
-        goals.add(new EatGoal());
-        goals.add(new SocializeGoal());
-        goals.add(new SeekSafetyGoal());
-        goals.add(new WorkGoal());
+        if (goals == null) goals = new ArrayList<>();
+            else goals.clear();
+            goals.add(new SleepGoal());
+            goals.add(new EatGoal());
+            goals.add(new SocializeGoal());
+            goals.add(new SeekSafetyGoal());
+            goals.add(new WorkGoal());
     }
 
     // -------------------------------------------------------------------------
@@ -151,6 +161,17 @@ public class ColonistEntity extends PathfinderMob {
         super.defineSynchedData(builder);
         builder.define(DATA_JOB_ROLE, JobRole.UNEMPLOYED.name());
         builder.define(DATA_COLONIST_NAME, "Colonist");
+        builder.define(DATA_VARIANT, ColonistVariant.DEFAULT.id());
+    }
+
+    @Override
+    public @Nullable SpawnGroupData finalizeSpawn(ServerLevelAccessor level,
+                                                  DifficultyInstance difficulty,
+                                                  MobSpawnType spawnType,
+                                                  @Nullable SpawnGroupData spawnGroupData) {
+        SpawnGroupData result = super.finalizeSpawn(level, difficulty, spawnType, spawnGroupData);
+        setVariant(ColonistVariant.random(level.getRandom()));
+        return result;
     }
 
     // -------------------------------------------------------------------------
@@ -339,6 +360,7 @@ public class ColonistEntity extends PathfinderMob {
         super.addAdditionalSaveData(tag);
         tag.put("needs", needs.save());
         tag.putString("jobRole", jobRole.name());
+        tag.putString("variant", getVariant().id());
     }
 
     @Override
@@ -351,6 +373,9 @@ public class ColonistEntity extends PathfinderMob {
             } catch (IllegalArgumentException e) {
                 jobRole = JobRole.UNEMPLOYED;
             }
+        }
+        if (tag.contains("variant")) {
+            setVariant(ColonistVariant.fromId(tag.getString("variant")));
         }
     }
 
@@ -368,4 +393,12 @@ public class ColonistEntity extends PathfinderMob {
     }
 
     public GOAPGoal getActiveGoal() { return activeGoal; }
+
+    public ColonistVariant getVariant() {
+        return ColonistVariant.fromId(getEntityData().get(DATA_VARIANT));
+    }
+
+    public void setVariant(ColonistVariant variant) {
+        getEntityData().set(DATA_VARIANT, (variant == null ? ColonistVariant.DEFAULT : variant).id());
+    }
 }

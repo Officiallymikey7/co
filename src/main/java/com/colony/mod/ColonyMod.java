@@ -11,6 +11,8 @@ import com.colony.mod.registry.ColonyItems;
 import com.colony.mod.town.CrimeType;
 import com.colony.mod.town.TownManager;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
@@ -18,6 +20,11 @@ import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRe
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.SpawnPlacementTypes;
+import net.minecraft.world.entity.SpawnPlacements;
+import net.minecraft.world.level.levelgen.Heightmap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -59,6 +66,7 @@ public class ColonyMod implements ModInitializer {
 
         // Register entity attributes
         FabricDefaultAttributeRegistry.register(ColonyEntityTypes.COLONIST, ColonistEntity.createAttributes());
+        registerColonistSpawnRules();
 
         // Load config from disk
         ColonyConfig.load();
@@ -122,5 +130,22 @@ public class ColonyMod implements ModInitializer {
         LOGGER.info("[Colony] Common setup complete. {} smart-object definitions registered.",
                 com.colony.mod.smartobject.ColonySmartObjectAPI.size());
     }
-}
 
+    private void registerColonistSpawnRules() {
+        SpawnPlacements.register(
+                ColonyEntityTypes.COLONIST,
+                SpawnPlacementTypes.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                Mob::checkMobSpawnRules
+        );
+
+        BiomeModifications.addSpawn(
+                BiomeSelectors.foundInOverworld(),
+                MobCategory.CREATURE,
+                ColonyEntityTypes.COLONIST,
+                12,
+                1,
+                3
+        );
+    }
+}

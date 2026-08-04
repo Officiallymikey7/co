@@ -1,6 +1,7 @@
 package com.colony.mod.registry;
 
 import com.colony.mod.ColonyMod;
+import com.colony.mod.item.ColonistSpawnEggItem;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -24,6 +25,8 @@ public final class ColonyItems {
     /**
      * Spawn egg for the {@link com.colony.mod.entity.ColonistEntity}.
      * Allows players and data-packs to spawn colonists via /give or creative inventory.
+     * Specific texture variants can be selected with
+     * {@code minecraft:entity_data={id:"colony:colonist",variant="<variant_id>"}}.
      * Must be registered after {@link ColonyEntityTypes#COLONIST} is set.
      */
     public static SpawnEggItem COLONIST_SPAWN_EGG;
@@ -39,7 +42,7 @@ public final class ColonyItems {
         COLONIST_SPAWN_EGG = Registry.register(
                 BuiltInRegistries.ITEM,
                 ResourceLocation.fromNamespaceAndPath(ColonyMod.MOD_ID, "colonist_spawn_egg"),
-                new SpawnEggItem(ColonyEntityTypes.COLONIST, 0x8B6914, 0xF5DEB3,
+                new ColonistSpawnEggItem(ColonyEntityTypes.COLONIST, 0x8B6914, 0xF5DEB3,
                         new Item.Properties())
         );
     }
